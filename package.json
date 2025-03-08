@@ -1,0 +1,24 @@
+{
+  "name": "flufflediscordbot",
+  "author": "cyanoflame",
+  "description": "This discord bot is designed to be a tool for reverse image searching images on discord for the furry community. It works with a service that does this called Fluffle, which can be found here: https://github.com/NoppesTheFolf/Fluffle",
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "start": "bun run start:bot",
+    "start:bot": "bun --env-file=.env.production.local src/start-bot.ts",
+    "dev": "bun run dev:bot",
+    "dev:bot": "bun --env-file=.env.development.local --watch run src/start-bot.ts"
+  },
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "discord.js": "^14.18.0",
+    "sharp": "^0.33.5"
+  }
+}
