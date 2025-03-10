@@ -1,0 +1,44 @@
+{
+    "client": {
+        "intents": [
+            "MessageContent"
+        ],
+        "partials": [
+            "Message",
+            "Channel",
+            "Reaction"
+        ],
+        "caches": {
+            "ApplicationCommandManager": 0,
+            "ApplicationEmojiManager": 0,
+            "AutoModerationRuleManager": 0,
+            "BaseGuildEmojiManager": 0,
+            "DMMessageManager": 0,
+            "EntitlementManager": 0,
+            "GuildBanManager": 0,
+            "GuildEmojiManager": 0,
+            "GuildForumThreadManager": 0,
+            "GuildInviteManager": 0,
+            "GuildMemberManager": 0,
+            "GuildMessageManager": 0,
+            "GuildScheduledEventManager": 0,
+            "GuildStickerManager": 0,
+            "GuildTextThreadManager": 0,
+            "MessageManager": 0,
+            "PresenceManager": 0,
+            "ReactionManager": 0,
+            "ReactionUserManager": 0,
+            "StageInstanceManager": 0,
+            "ThreadManager": 0,
+            "ThreadMemberManager": 0,
+            "UserManager": 0,
+            "VoiceStateManager": 0
+        }
+    },
+    "logging": {
+        "pretty": true,
+        "rateLimit": {
+            "minTimeout": 30
+        }
+    }
+}
