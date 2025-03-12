@@ -1,15 +1,13 @@
 import { Message } from 'discord.js'
-import { RateLimiter } from 'discord.js-rate-limiter'
 
-import { EventDataService } from '../services/index.js'
 import type { Trigger } from '../triggers/trigger.ts'
+import { RateLimitedHandler } from './rateLimitedHandler.ts'
+import type { EventHandler } from './eventHandler.ts'
 
 /**
  * This class is used for handling any triggers that occur.
  */
-class TriggerHandler {
-    // used to rate limit the use of the trigger
-    private rateLimiter: RateLimiter
+class TriggerHandler extends RateLimitedHandler implements EventHandler {
 
     // the list of triggers that are chedked to be executed
     private triggers: Trigger[]
@@ -20,21 +18,22 @@ class TriggerHandler {
     constructor(
         triggers: Trigger[],
         eventDataService: EventDataService,
-        rateLimitAmount: number,
+        rateLimitAmount: number, 
         rateLimitInterval: number
     ) {
+        // Create the rate limiter
+        super(rateLimitAmount, rateLimitInterval)
+
+        // Set the triggers
         this.triggers = triggers
+
+        // Set the event data service for the object
         this.eventDataService = eventDataService
-        this.rateLimiter = new RateLimiter(
-            rateLimitAmount, // Config.rateLimiting.triggers.amount,
-            rateLimitInterval, //Config.rateLimiting.triggers.interval * 1000
-        )
     }
 
     public async process(msg: Message): Promise<void> {
-        // Check if user is rate limited
-        let limited = this.rateLimiter.take(msg.author.id)
-        if(limited) {
+        // Check for any rate limiting and 
+        if(this.isRateLimited(msg.author.id)) {
             return
         }
 
