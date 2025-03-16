@@ -25,40 +25,40 @@ const IGNORED_ERRORS = [
  * These are utility functions for dealing with Discord.js Partials
  */
 export class PartialUtils {
-    public static async fillUser(user: User | PartialUser): Promise<User | undefined> {
+    public static async fillUser(user: User | PartialUser): Promise<User> {
         if (user.partial) {
             try {
                 return await user.fetch()
             } catch (error) {
-                if (
-                    error instanceof DiscordAPIError &&
-                    typeof error.code == 'number' &&
-                    IGNORED_ERRORS.includes(error.code)
-                ) {
-                    return undefined
-                } else {
+                // if (
+                //     error instanceof DiscordAPIError &&
+                //     typeof error.code == 'number' &&
+                //     IGNORED_ERRORS.includes(error.code)
+                // ) {
+                //     return
+                // } else {
                     throw error
-                }
+                // }
             }
         }
 
         return user as User
     }
 
-    public static async fillMessage(msg: Message | PartialMessage): Promise<Message | undefined> {
+    public static async fillMessage(msg: Message | PartialMessage): Promise<Message> {
         if (msg.partial) {
             try {
                 return await msg.fetch()
             } catch (error) {
-                if (
-                    error instanceof DiscordAPIError &&
-                    typeof error.code == 'number' &&
-                    IGNORED_ERRORS.includes(error.code)
-                ) {
-                    return undefined
-                } else {
+                // if (
+                //     error instanceof DiscordAPIError &&
+                //     typeof error.code == 'number' &&
+                //     IGNORED_ERRORS.includes(error.code)
+                // ) {
+                //     return undefined
+                // } else {
                     throw error
-                }
+                // }
             }
         }
 
@@ -72,22 +72,22 @@ export class PartialUtils {
             try {
                 msgReaction = await msgReaction.fetch()
             } catch (error) {
-                if (
-                    error instanceof DiscordAPIError &&
-                    typeof error.code == 'number' &&
-                    IGNORED_ERRORS.includes(error.code)
-                ) {
-                    return
-                } else {
+                // if (
+                //     error instanceof DiscordAPIError &&
+                //     typeof error.code == 'number' &&
+                //     IGNORED_ERRORS.includes(error.code)
+                // ) {
+                //     return
+                // } else {
                     throw error
-                }
+                // }
             }
         }
 
-        msgReaction.message = await this.fillMessage(msgReaction.message)
-        if (!msgReaction.message) {
-            return 
-        }
+        // msgReaction.message = await this.fillMessage(msgReaction.message)
+        // if (!msgReaction.message) {
+        //     return 
+        // }
 
         return msgReaction as MessageReaction
     }

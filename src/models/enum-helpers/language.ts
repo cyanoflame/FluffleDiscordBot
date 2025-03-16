@@ -1,12 +1,21 @@
 import { Locale } from 'discord.js'
 
-interface LanguageData {
+/**
+ * This discord locales refer to locales with both their English name, and their native name. This 
+ * type establishes that data structure.
+ */
+type LanguageData = {
     englishName: string
     nativeName: string
 }
 
-export class Language {
+/**
+ * This class does something with language... idk yet
+ */
+class Language {
+    /** Establishes teh default language */
     public static Default = Locale.EnglishUS
+    /** ?????*/
     public static Enabled: Locale[] = [Locale.EnglishUS, Locale.EnglishGB]
 
     // See https://discord.com/developers/docs/reference#locales
@@ -61,13 +70,7 @@ export class Language {
         let found = new Set<Locale>()
         // Exact match
         if (found.size < limit)
-            langCodes
-                .filter(langCode => langCode.toLowerCase() === search)
-                .forEach(langCode => found.add(langCode))
-        if (found.size < limit)
-            langCodes
-                .filter(langCode => this.Data[langCode].nativeName.toLowerCase() === search)
-                .forEach(langCode => found.add(langCode))
+            langCodes.filter(langCode => langCode.toLowerCase() === search).forEach(langCode => found.add(langCode))
         if (found.size < limit)
             langCodes
                 .filter(langCode => this.Data[langCode].nativeName.toLowerCase() === search)
@@ -108,4 +111,8 @@ export class Language {
                 .forEach(langCode => found.add(langCode))
         return [...found]
     }
+}
+
+export {
+    Language
 }
