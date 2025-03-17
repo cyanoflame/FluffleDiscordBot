@@ -32,7 +32,7 @@ class MsgTriggerRateLimitProxy implements MsgTrigger {
      * @param proxyName The name of the the proxy, used to identify it in logging.
      * @param msgTrigger The msgTrigger object that is being proxied.
      */
-    constructor(rateLimiter: {rateLimitAmount: number, rateLimitInterval: number} | RateLimiter, msgTriggerName: string, proxyName: string, msgTrigger: MsgTrigger) {
+    constructor(rateLimiter: {rateLimitAmount: number, rateLimitInterval: number} | RateLimiter, proxyName: string, msgTrigger: MsgTrigger) {
         // if the ratelimiter is predefined, then set that. Otherwise, make a new one
         if(rateLimiter instanceof RateLimiter) {
             // set the rate limiter reference
@@ -40,8 +40,8 @@ class MsgTriggerRateLimitProxy implements MsgTrigger {
         } else {
             // Create the rate limiter object
             this.rateLimiter = new RateLimiter(
-                rateLimiter.rateLimitAmount, // Config.rateLimiting.triggers.amount,
-                rateLimiter.rateLimitInterval, //Config.rateLimiting.triggers.interval * 1000
+                rateLimiter.rateLimitAmount, 
+                rateLimiter.rateLimitInterval, 
             )
         }
 

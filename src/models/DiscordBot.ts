@@ -115,6 +115,10 @@ class DiscordBot {
         // )
     }
 
+    /**
+     * Used to log the Discord bot in with the token to have it work.
+     * @param token The bot token for the bot to get it to work.
+     */
     private async login(token: string): Promise<void> {
         try {
             await this.client.login(token)
@@ -128,12 +132,16 @@ class DiscordBot {
         let userTag = this.client.user?.tag
         Logger.info(LogMessageTemplates.info.clientLogin.replaceAll('{USER_TAG}', userTag ?? "[undefined]"))
 
-        // if (!Debug.dummyMode.enabled) {
-        //     this.jobService.start()
-        // }
-
         this.ready = true
         Logger.info(LogMessageTemplates.info.clientReady)
+    }
+
+    /**
+     * This is used to get the bot's Client object for use in other classes.
+     * @returns The bot's Client object used for discord.
+     */
+    public getClient(): Client  {
+        return this.client
     }
 
     // private onShardReady(shardId: number, _unavailableGuilds: Set<string>): void {
@@ -209,8 +217,9 @@ class DiscordBot {
      * @param msg The message being checked by the bot.
      */
     private async onMessage(msg: Message): Promise<void> {
-        // Do not do anything if the bot is not ready
-        if(!this.ready) {
+        // Do not do anything if the bot is not ready, and do not respond 
+        // to anything from the bot itself or the system
+        if(!this.ready || msg.system || msg.author.id === msg.client.user?.id) {
             return
         }
         try {

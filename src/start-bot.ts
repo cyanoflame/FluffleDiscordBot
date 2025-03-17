@@ -5,8 +5,12 @@ import type { GatewayIntentsString } from "discord.js"
 import config from '../config/config.json'
 import { DiscordBot } from "./models/DiscordBot"
 import { EventDataService } from "./services/eventDataService"
+import { OnImageMsgTrigger } from "./msgTriggers/OnImageMsgTrigger"
+import { MsgTriggerRateLimitProxy } from "./proxies/MsgTriggerRateLimitProxy"
+import { Logger } from "./services/logger"
+import LogMessageTemplates from "../lang/logMessageTemplates.json"
 
-console.log("Hello via Bun!")
+console.log("Starting Bot Instance")
 
 /**
  * This is the main file that runs the a bot.
@@ -22,6 +26,8 @@ async function start(): Promise<void> {
     // let buttonHandler = new ButtonHandler(buttons, eventDataService)
     // let reactionHandler = new ReactionHandler(reactions, eventDataService)
 
+    // console.log("TEST:", (config.client.partials as string[]).map(partial => Partials[partial as keyof typeof Partials]), (config.client.partials as string[]).map(partial => Partials[partial]))
+    
     // Create the discord bot
     let bot = new DiscordBot(
         {
@@ -49,7 +55,26 @@ async function start(): Promise<void> {
     
     // Create any services used by the events/handlers
 
-    // Add any message triggers to the bot
-    bot.addMsgTrigger()
+    // Add any message triggers / MsgTriggers to the bot
+    // bot.addMsgTrigger(new OnImageMsgTrigger(bot.getClient())) // No RateLimit proxy
+    bot.addMsgTrigger(new MsgTriggerRateLimitProxy(
+        {
+            rateLimitAmount: config.rateLimiting.triggers.amount, 
+            rateLimitInterval: config.rateLimiting.triggers.interval * 1000
+        }, 
+        "OnImageMsgTrigger", 
+        new OnImageMsgTrigger(bot.getClient())
+    )) // With RateLimit Proxy
 
+    // Start the bot
+    await bot.start()
 }
+
+process.on('unhandledRejection', (reason, _promise) => {
+    Logger.error(LogMessageTemplates.error.unhandledRejection, reason);
+});
+
+
+start().catch(error => {
+    Logger.error(LogMessageTemplates.error.unspecified, error);
+})
