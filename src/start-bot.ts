@@ -42,7 +42,7 @@ async function start(): Promise<void> {
             // Used to remove old items from a cache
             sweepers: undefined
         },
-        process.env.BOT_TOKEN ?? "",
+        process.env.BOT_TOKEN!,
         // guildJoinHandler,
         // guildLeaveHandler,
         // commandHandler,
@@ -63,7 +63,7 @@ async function start(): Promise<void> {
             rateLimitInterval: config.rateLimiting.triggers.interval * 1000
         }, 
         "OnImageMsgTrigger", 
-        new OnImageMsgTrigger(bot.getClient())
+        new OnImageMsgTrigger()
     )) // With RateLimit Proxy
 
     // Start the bot

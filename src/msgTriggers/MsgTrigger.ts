@@ -1,4 +1,5 @@
-import { Message } from 'discord.js'
+import { Client, Message } from 'discord.js'
+
 
 import { EventData } from '../models/eventData.ts'
 
@@ -18,10 +19,11 @@ interface MsgTrigger {
     
     /**
      * When the trigger conditions are met, this function will be executed.
+     * @param client The Discord client to run any commands to interact with Discord.
      * @param msg The message casuing the trigger.
      * @param data The data related to the event, passed in from the EventDataService.
      */
-    execute(msg: Message, data: EventData): Promise<void>;
+    execute(client: Client, msg: Message, data: EventData): Promise<void>;
 }
 
 export type {

@@ -1,6 +1,6 @@
 import { RateLimiter } from 'discord.js-rate-limiter'
 import type { MsgTrigger } from '../msgTriggers/MsgTrigger'
-import type { Message } from 'discord.js'
+import type { Client, Message } from 'discord.js'
 import type { EventData } from '../models/eventData'
 import { Logger } from '../services/logger'
 
@@ -110,8 +110,8 @@ class MsgTriggerRateLimitProxy implements MsgTrigger {
      * @param msg The message casuing the trigger.
      * @param data The data related to the event, passed in from the EventDataService.
      */
-    public async execute(msg: Message, data: EventData): Promise<void> {
-        await this.msgTrigger.execute(msg, data)
+    public async execute(client: Client, msg: Message, data: EventData): Promise<void> {
+        await this.msgTrigger.execute(client, msg, data)
     }
 
 }

@@ -136,14 +136,6 @@ class DiscordBot {
         Logger.info(LogMessageTemplates.info.clientReady)
     }
 
-    /**
-     * This is used to get the bot's Client object for use in other classes.
-     * @returns The bot's Client object used for discord.
-     */
-    public getClient(): Client  {
-        return this.client
-    }
-
     // private onShardReady(shardId: number, _unavailableGuilds: Set<string>): void {
     //     Logger.setShardId(shardId)
     // }
@@ -256,7 +248,7 @@ class DiscordBot {
 
             // Execute triggers
             for (let msgTrigger of activeMsgTrigger) {
-                await msgTrigger.execute(msg, data);
+                await msgTrigger.execute(this.client, msg, data);
             }
         } catch (error) {
             Logger.error(LogMessageTemplates.error.message, error)

@@ -121,19 +121,15 @@ function parseResults(fluffleResult: FluffleResult): string {
  * image on Fluffle and responds to the message with any sources found.
  */
 class OnImageMsgTrigger implements MsgTrigger {
-
-    /** The Discord bot Client object that is used to do things */
-    private readonly client: Client
     
     /** This event does not need the message guild to run */
     public readonly requireGuild: boolean = false
 
     /**
-     * Creates a new MsgTrigger with the passed Client reference.
-     * @param clientRef The Discord Client object used by the bot to do things.
+     * Creates a new MsgTrigger.
      */
-    constructor(client: Client) {
-        this.client = client
+    constructor() {
+        // doesnt need anything
     }
 
     private count = 0
@@ -183,11 +179,17 @@ class OnImageMsgTrigger implements MsgTrigger {
         return false
     }
 
-    public async execute(msg: Message, data: EventData): Promise<void> {
+    /**
+     * When the trigger conditions are met, this function will be executed.
+     * @param client The Discord client to run any commands to interact with Discord.
+     * @param msg The message casuing the trigger.
+     * @param data The data related to the event, passed in from the EventDataService.
+     */
+    public async execute(client: Client, msg: Message, data: EventData): Promise<void> {
         // Check the referenced post if it's a forwarded message
 
         // get the message channel to send the response to
-        let channel = this.client.channels.cache.get(msg.channelId)
+        let channel = client.channels.cache.get(msg.channelId)
 
         if(channel == undefined) {
             throw Error("Unable to get message channel.")
