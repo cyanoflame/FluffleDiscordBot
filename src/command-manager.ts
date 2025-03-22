@@ -1,8 +1,13 @@
 import { Logger } from "./services/logger"
 import LogMessageTemplates from "../lang/logMessageTemplates.json"
 import { REST, Routes, type APIApplicationCommand, type RESTGetAPIApplicationCommandsResult, type RESTPatchAPIApplicationCommandJSONBody, type RESTPostAPIApplicationCommandsJSONBody, type RESTPostAPIChatInputApplicationCommandsJSONBody, type RESTPostAPIContextMenuApplicationCommandsJSONBody } from "discord.js";
-import config from '../config/config.json'
 import { CommandManager } from "./commandManager/CommandManager";
+import type { CommandManagerFunction } from "./commandManager/CommandManagerFunction";
+import { ViewFunction } from "./commandManager/functions/ViewFunction";
+import { RegisterFunction } from "./commandManager/functions/RegisterFunction";
+import { RenameFunction } from "./commandManager/functions/RenameFunction";
+import { DeleteFunction } from "./commandManager/functions/DeleteFunction";
+import { ClearFunction } from "./commandManager/functions/ClearFunction";
 
 /**
  * The potential operations that can be done with the command manager.
@@ -39,85 +44,60 @@ function toCommandOperation(argument: string): CommandOperation {
     }
 }
 
-/**
- * This takes a list of commands and returns the names of all of them in a comma separated string.
- * For example: "cmd1, cmd2, cmd3"
- * @param cmds The list of commands to format into a readable string.
- * @returns Comma separated string of all the commands in the input list.
- */
-function formatCommandList(cmds: RESTPostAPIApplicationCommandsJSONBody[] | APIApplicationCommand[]): string {
-    return cmds.length > 0
-        ? cmds.map((cmd: { name: string }) => `'${cmd.name}'`).join(', ')
-        : 'N/A';
-}
+async function start(): Promise<void> {
 
-async function start(operation: CommandOperation): Promise<void> {
+    // Define the local commands here
+    let localCommands: {[command: string]: RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody}[] = [
+        // ChatCommandMetadata,
+        // MessageCommandMetadata,
+        // ...
+    ];
 
-    let manager = new CommandManager(process.env.BOT_TOKEN!, process.env.BOT_ID!)
+    // Create the manager
+    let manager = new CommandManager(process.env.BOT_TOKEN!, process.env.BOT_ID!, localCommands)
 
-    // try {
-        let localCmds: {[command: string]: RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody}[] = [
-            // ...Object.values(ChatCommandMetadata),
-            // ...Object.values(MessageCommandMetadata).sort((a, b) => (a.name > b.name ? 1 : -1)),
-            // ...Object.values(UserCommandMetadata).sort((a, b) => (a.name > b.name ? 1 : -1)),
-        ];
+    // Select the proper command
+    let command: CommandManagerFunction | undefined = undefined;
 
-        // Sort all command metadata alphabetically for each command
-        let sortedLocalCmdsArgs: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[] = []
-        localCmds.forEach((cmdArgs) => Object.values(cmdArgs).sort((a, b) => (a.name > b.name ? 1 : -1)).forEach(sortedArg => sortedLocalCmdsArgs.push(sortedArg)))
+    // Get the right command
+    switch (toCommandOperation(process.argv[3])) {
+        case CommandOperation.VIEW: {
+            command = new ViewFunction(await manager.getLocalCommandsOnRemote(), await manager.getLocalCommandsOnly(), await manager.getRemoteCommandsOnly());
+            break;
+        }
+        case CommandOperation.REGISTER: {
+            command = new RegisterFunction(await manager.getLocalCommandsOnRemote(), await manager.getLocalCommandsOnly());
+            break;
+        }
+        case CommandOperation.RENAME: {
+            let oldName = process.argv[4];
+            let newName = process.argv[5];
+            if (!(oldName && newName)) {
+                Logger.error(LogMessageTemplates.error.commandActionRenameMissingArg);
+                break;
+            }
+            command = new RenameFunction(await manager.getRemoteCommands(), oldName, newName);
+            break;
+        }
+        case CommandOperation.DELETE: {
+            let commandName = process.argv[4]
+            if (!commandName) {
+                Logger.error(LogMessageTemplates.error.commandActionDeleteMissingArg);
+                break;
+            }
+            command = new DeleteFunction(await manager.getRemoteCommands(), commandName);
+            break;
+        }
+        case CommandOperation.CLEAR: {
+            command = new ClearFunction(await manager.getRemoteCommands());
+            break;
+        }
+    }
 
-        // // Create the discord rest object
-        let rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN!);
-
-        // Gets the commands that have previously been uploaded to the bot
-        let remoteCmds = (await rest.get(
-            Routes.applicationCommands(process.env.CLIENT_ID!)
-        )) as RESTGetAPIApplicationCommandsResult;
-
-        // Figure out which commands are local vs which are already uploaded to the bot for syncing properly
-
-        // This creates a list of all of the local commands that already have been uploaded to the bot
-        let localCmdsOnRemote = sortedLocalCmdsArgs.filter(localCmd =>
-            remoteCmds.some(remoteCmd => remoteCmd.name === localCmd.name)
-        );
-        // This creates a list of all the local commands that do NOT exist/have been uploaded to the bot
-        let localCmdsOnly = sortedLocalCmdsArgs.filter(
-            localCmd => !remoteCmds.some(remoteCmd => remoteCmd.name === localCmd.name)
-        );
-        // This is a list of all the commands that ONLY exist/have been uploaded to the bot
-        let remoteCmdsOnly = remoteCmds.filter(
-            remoteCmd => !sortedLocalCmdsArgs.some(localCmd => localCmd.name === remoteCmd.name)
-        );
-
-    //     // Perform the operation
-    //     switch (operation) {
-    //         case CommandOperation.VIEW: {
-
-    //             return;
-    //         }
-    //         case CommandOperation.REGISTER: {
-                
-
-    //             return;
-    //         }
-    //         case CommandOperation.RENAME: {
-                
-    //             return;
-    //         }
-    //         case CommandOperation.DELETE: {
-                
-    //             return;
-    //         }
-    //         case CommandOperation.CLEAR: {
-
-    //             return;
-    //         }
-    //     }
-
-    // } catch (error) {
-    //     Logger.error(LogMessageTemplates.error.commandAction, error);
-    // }
-    
+    // Run the command if it's valid
+    if(command) {
+        manager.executeCommand(command);
+    }
 }
 
 // if any errors occur, log them this way
@@ -126,6 +106,6 @@ process.on('unhandledRejection', (reason, _promise) => {
 });
 
 // Start the system
-start(toCommandOperation(process.argv[3])).catch(error => {
+start()).catch(error => {
     Logger.error(LogMessageTemplates.error.unspecified, error);
 });

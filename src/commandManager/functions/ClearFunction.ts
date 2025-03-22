@@ -7,7 +7,7 @@ import { REST, Routes, type RESTGetAPIApplicationCommandsResult } from "discord.
 /**
  * This function clears all of the commands uploaded to the bot.
  */
-export class RegisterFunction extends FormatCommandList implements CommandManagerFunction {
+export class ClearFunction extends FormatCommandList implements CommandManagerFunction {
 
     private remoteCommands: RESTGetAPIApplicationCommandsResult;
 
