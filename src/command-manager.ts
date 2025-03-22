@@ -59,7 +59,7 @@ async function start(): Promise<void> {
     // Select the proper command
     let command: CommandManagerFunction | undefined = undefined;
 
-    // Get the right command
+    // Select the right command
     switch (toCommandOperation(process.argv[3])) {
         case CommandOperation.VIEW: {
             command = new ViewFunction(await manager.getLocalCommandsOnRemote(), await manager.getLocalCommandsOnly(), await manager.getRemoteCommandsOnly());
@@ -106,6 +106,6 @@ process.on('unhandledRejection', (reason, _promise) => {
 });
 
 // Start the system
-start()).catch(error => {
+start().catch(error => {
     Logger.error(LogMessageTemplates.error.unspecified, error);
 });
