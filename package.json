@@ -8,7 +8,12 @@
     "start": "bun run start:bot",
     "start:bot": "bun --env-file=.env.production.local src/start-bot.ts",
     "dev": "bun run dev:bot",
-    "dev:bot": "bun --env-file=.env.development.local --watch run src/start-bot.ts"
+    "dev:bot": "bun --env-file=.env.development.local --watch run src/start-bot.ts",
+    "commands:view": "bun run src/commands.ts view",
+    "commands:register": "bun run src/commands.ts register",
+    "commands:rename": "bun run src/commands.ts rename",
+    "commands:delete": "bun run src/commands.ts delete",
+    "commands:clear": "bun run src/commands.ts clear",
   },
   "private": true,
   "devDependencies": {
