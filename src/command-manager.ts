@@ -2,10 +2,11 @@ import { Logger } from "./services/logger"
 import LogMessageTemplates from "../lang/logMessageTemplates.json"
 import { REST, Routes, type APIApplicationCommand, type RESTGetAPIApplicationCommandsResult, type RESTPatchAPIApplicationCommandJSONBody, type RESTPostAPIApplicationCommandsJSONBody, type RESTPostAPIChatInputApplicationCommandsJSONBody, type RESTPostAPIContextMenuApplicationCommandsJSONBody } from "discord.js";
 import config from '../config/config.json'
+import { CommandManager } from "./commandManager/CommandManager";
 
 /**
  * The potential operations that can be done with the command manager.
- * CLEAR =
+ * CLEAR = remove all commands
  */
 enum CommandOperation {
     CLEAR = 'clear',
@@ -51,7 +52,10 @@ function formatCommandList(cmds: RESTPostAPIApplicationCommandsJSONBody[] | APIA
 }
 
 async function start(operation: CommandOperation): Promise<void> {
-    try {
+
+    let manager = new CommandManager(process.env.BOT_TOKEN!, process.env.BOT_ID!)
+
+    // try {
         let localCmds: {[command: string]: RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody}[] = [
             // ...Object.values(ChatCommandMetadata),
             // ...Object.values(MessageCommandMetadata).sort((a, b) => (a.name > b.name ? 1 : -1)),
@@ -62,7 +66,7 @@ async function start(operation: CommandOperation): Promise<void> {
         let sortedLocalCmdsArgs: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[] = []
         localCmds.forEach((cmdArgs) => Object.values(cmdArgs).sort((a, b) => (a.name > b.name ? 1 : -1)).forEach(sortedArg => sortedLocalCmdsArgs.push(sortedArg)))
 
-        // Create the discord rest object
+        // // Create the discord rest object
         let rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN!);
 
         // Gets the commands that have previously been uploaded to the bot
@@ -85,126 +89,38 @@ async function start(operation: CommandOperation): Promise<void> {
             remoteCmd => !sortedLocalCmdsArgs.some(localCmd => localCmd.name === remoteCmd.name)
         );
 
-        // Perform the operation
-        switch (operation) {
-            case CommandOperation.VIEW: {
-                Logger.info(
-                    LogMessageTemplates.info.commandActionView
-                        .replaceAll(
-                            '{LOCAL_AND_REMOTE_LIST}',
-                            formatCommandList(localCmdsOnRemote)
-                        )
-                        .replaceAll('{LOCAL_ONLY_LIST}', formatCommandList(localCmdsOnly))
-                        .replaceAll('{REMOTE_ONLY_LIST}', formatCommandList(remoteCmdsOnly))
-                );
-                return;
-            }
-            case CommandOperation.REGISTER: {
-                if (localCmdsOnly.length > 0) {
-                    Logger.info(
-                        LogMessageTemplates.info.commandActionCreating.replaceAll(
-                            '{COMMAND_LIST}',
-                            formatCommandList(localCmdsOnly)
-                        )
-                    );
-                    for (let localCmd of localCmdsOnly) {
-                        await rest.post(Routes.applicationCommands(process.env.BOT_ID!), {
-                            body: localCmd,
-                        });
-                    }
-                    Logger.info(LogMessageTemplates.info.commandActionCreated);
-                }
+    //     // Perform the operation
+    //     switch (operation) {
+    //         case CommandOperation.VIEW: {
 
-                if (localCmdsOnRemote.length > 0) {
-                    Logger.info(
-                        LogMessageTemplates.info.commandActionUpdating.replaceAll(
-                            '{COMMAND_LIST}',
-                            formatCommandList(localCmdsOnRemote)
-                        )
-                    );
-                    for (let localCmd of localCmdsOnRemote) {
-                        await rest.post(Routes.applicationCommands(process.env.BOT_ID!), {
-                            body: localCmd,
-                        });
-                    }
-                    Logger.info(LogMessageTemplates.info.commandActionUpdated);
-                }
+    //             return;
+    //         }
+    //         case CommandOperation.REGISTER: {
+                
 
-                return;
-            }
-            case CommandOperation.RENAME: {
-                let oldName = args[4];
-                let newName = args[5];
-                if (!(oldName && newName)) {
-                    Logger.error(LogMessageTemplates.error.commandActionRenameMissingArg);
-                    return;
-                }
+    //             return;
+    //         }
+    //         case CommandOperation.RENAME: {
+                
+    //             return;
+    //         }
+    //         case CommandOperation.DELETE: {
+                
+    //             return;
+    //         }
+    //         case CommandOperation.CLEAR: {
 
-                let remoteCmd = remoteCmds.find(remoteCmd => remoteCmd.name == oldName);
-                if (!remoteCmd) {
-                    Logger.error(
-                        LogMessageTemplates.error.commandActionNotFound.replaceAll('{COMMAND_NAME}', oldName)
-                    );
-                    return;
-                }
+    //             return;
+    //         }
+    //     }
 
-                Logger.info(
-                    LogMessageTemplates.info.commandActionRenaming
-                        .replaceAll('{OLD_COMMAND_NAME}', remoteCmd.name)
-                        .replaceAll('{NEW_COMMAND_NAME}', newName)
-                );
-                let body: RESTPatchAPIApplicationCommandJSONBody = {
-                    name: newName,
-                };
-                await rest.patch(Routes.applicationCommand(process.env.BOT_ID!, remoteCmd.id), {
-                    body,
-                });
-                Logger.info(LogMessageTemplates.info.commandActionRenamed);
-                return;
-            }
-            case CommandOperation.DELETE: {
-                let name = args[4];
-                if (!name) {
-                    Logger.error(LogMessageTemplates.error.commandActionDeleteMissingArg);
-                    return;
-                }
-
-                let remoteCmd = remoteCmds.find(remoteCmd => remoteCmd.name == name);
-                if (!remoteCmd) {
-                    Logger.error(
-                        LogMessageTemplates.error.commandActionNotFound.replaceAll('{COMMAND_NAME}', name)
-                    );
-                    return;
-                }
-
-                Logger.info(
-                    LogMessageTemplates.info.commandActionDeleting.replaceAll('{COMMAND_NAME}', remoteCmd.name)
-                );
-                await rest.delete(Routes.applicationCommand(process.env.BOT_ID!, remoteCmd.id));
-                Logger.info(LogMessageTemplates.info.commandActionDeleted);
-                return;
-            }
-            case CommandOperation.CLEAR: {
-                Logger.info(
-                    LogMessageTemplates.info.commandActionClearing.replaceAll(
-                        '{COMMAND_LIST}',
-                        formatCommandList(remoteCmds)
-                    )
-                );
-                await rest.put(Routes.applicationCommands(process.env.BOT_ID!), { body: [] });
-                Logger.info(LogMessageTemplates.info.commandActionCleared);
-                return;
-            }
-        }
-
-
-    } catch (error) {
-        Logger.error(LogMessageTemplates.error.commandAction, error);
-    }
-    // Wait for any final logs to be written.
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    // } catch (error) {
+    //     Logger.error(LogMessageTemplates.error.commandAction, error);
+    // }
+    
 }
 
+// if any errors occur, log them this way
 process.on('unhandledRejection', (reason, _promise) => {
     Logger.error(LogMessageTemplates.error.unhandledRejection, reason);
 });
