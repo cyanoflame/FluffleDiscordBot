@@ -120,7 +120,7 @@ function parseResults(fluffleResult: FluffleResult): string {
  * This is a trigger that occurs whenever an image is sent to a channel. It will auto search the 
  * image on Fluffle and responds to the message with any sources found.
  */
-class OnImageMsgTrigger implements MsgTrigger {
+export class OnImageMsgTrigger implements MsgTrigger {
     
     /** This event does not need the message guild to run */
     public readonly requireGuild: boolean = false
@@ -383,8 +383,4 @@ class OnImageMsgTrigger implements MsgTrigger {
 
         return
     }
-}
-
-export {
-    OnImageMsgTrigger
 }

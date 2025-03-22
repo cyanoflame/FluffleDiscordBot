@@ -6,7 +6,7 @@ import { EventData } from '../models/eventData.ts'
 /**
  * A Trigger is executed whenever conditions with a specific message are met.
  */
-interface MsgTrigger {
+export interface MsgTrigger {
 
     /** Whether or not a the guild the message originates from is necessary or not */
     requireGuild: boolean;
@@ -24,8 +24,4 @@ interface MsgTrigger {
      * @param data The data related to the event, passed in from the EventDataService.
      */
     execute(client: Client, msg: Message, data: EventData): Promise<void>;
-}
-
-export type {
-    MsgTrigger
 }

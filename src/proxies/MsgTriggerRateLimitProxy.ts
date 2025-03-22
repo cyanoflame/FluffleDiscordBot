@@ -10,7 +10,7 @@ import LogMessageTemplates from "../../lang/logMessageTemplates.json"
  * This class is used to add a rate limiter to a message trigger as a proxy. This keeps the implementation 
  * abstracted from the MsgTrigger object itself while also making it easy to apply.
  */
-class MsgTriggerRateLimitProxy implements MsgTrigger {
+export class MsgTriggerRateLimitProxy implements MsgTrigger {
 
     /** The rate limiter used for whatever event handler is making use of it */
     private rateLimiter: RateLimiter
@@ -114,8 +114,4 @@ class MsgTriggerRateLimitProxy implements MsgTrigger {
         await this.msgTrigger.execute(client, msg, data)
     }
 
-}
-
-export {
-    MsgTriggerRateLimitProxy
 }
