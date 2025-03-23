@@ -10,15 +10,22 @@ type LanguageData = {
 }
 
 /**
- * This class does something with language... idk yet
+ * This class handles language, enabling supported languages, and getting locale mappings.
+ * TODO: Move enabled languages to a config file, configure in start-bot.ts, and remove from this file.
  */
-class Language {
-    /** Establishes teh default language */
-    public static Default = Locale.EnglishUS
-    /** ?????*/
-    public static Enabled: Locale[] = [Locale.EnglishUS, Locale.EnglishGB]
+export class Language {
 
-    // See https://discord.com/developers/docs/reference#locales
+    /** The default language of the bot */
+    public static Default = Locale.EnglishUS;
+    
+    /** Currently supported languages by the bot */
+    public static Enabled: Locale[] = [Locale.EnglishUS, Locale.EnglishGB];
+
+    /**
+     * This is all the language locales supported by Discord.
+     * It maps them with their associated english name and native name.
+     * See https://discord.com/developers/docs/reference#locales
+     */
     public static Data: {
         [key in Locale]: LanguageData
     } = {
@@ -56,10 +63,24 @@ class Language {
         'zh-TW': { englishName: 'Chinese, Taiwan', nativeName: '繁體中文' },
     }
 
-    public static find(input: string, enabled: boolean): Locale {
+    /**
+     * Used to convert a string to something under the Local  enumeration.
+     * @param input The language code for the data
+     * @param enabled Whether or not to check just supported/enabled languages.
+     * @returns The matching Locale enum if it was found,
+     */
+    public static find(input: string, enabled: boolean): Locale | undefined {
         return this.findMultiple(input, enabled, 1)[0]
     }
 
+    /**
+     * Used to search for multiple locales matching an input string. For example, if "en" is the string,
+     * then it will search for everything that has an "en" in it.
+     * @param input The language code for the data
+     * @param enabled Whether or not to check just supported/enabled languages.
+     * @param limit The max number of languages to return.
+     * @returns The matching Locale enums for those matching the input string.
+     */
     public static findMultiple(
         input: string,
         enabled: boolean,
@@ -111,8 +132,4 @@ class Language {
                 .forEach(langCode => found.add(langCode))
         return [...found]
     }
-}
-
-export {
-    Language
 }

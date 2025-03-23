@@ -316,6 +316,8 @@ export class OnImageMsgTrigger implements MsgTrigger {
 
             // Whatever happens to the gif, it is not resized. It just turns into a PNG?
 
+            /////////////////////// ATTEMPT 1 - WORKS
+
             // Workaround implementation since BunJS doesn't currently support Multipart formdata apparently :skull:
             // https://github.com/oven-sh/bun/issues/7917 -- other solution did not work
             let formData = new FormData()
@@ -327,6 +329,8 @@ export class OnImageMsgTrigger implements MsgTrigger {
             // Create the encoder to encode the form data
             const formDataEncoder = new FormDataEncoder(formData)
 
+            console.log("HEADERS:", formDataEncoder.headers)
+
             let searchResults = await fetch("https://api.fluffle.xyz/v1/search", {
                 method: "POST",
                 headers: new Headers({
@@ -335,6 +339,25 @@ export class OnImageMsgTrigger implements MsgTrigger {
                 }),
                 body: new Blob(await Readable.from(formDataEncoder.encode()).toArray(), {type: formDataEncoder.contentType})
             }).then(resp => resp.json()) as FluffleResult
+
+            //////////////// ATTEMPT 2 - DOESNT WORK - ALSO TESTED SLOWER
+
+            // let formData = new FormData()
+            // formData.append("limit", "8")
+            // formData.append("includeNsfw", "true")
+            // // // formData.append("platforms", ["e621"])
+            // formData.append("file", newImgData, "file.png")
+            // let textBody = await new Response(formData).text()
+            // console.log("SPLIT TEST BODY:", textBody.split("\n"))
+
+            // let searchResults = await fetch("https://api.fluffle.xyz/v1/search", {
+            //     method: "POST",
+            //     headers: new Headers({
+            //         "User-Agent": "fluffle-discord-bot/1.0 (by Cyanoflame)",
+            //         "Content-Type": `multipart/form-data; boundary=${textBody.split("\n")[0] .slice(2)}`
+            //     }),
+            //     body: textBody,
+            // }).then(resp => resp.json()) as FluffleResult
 
             //////////// WORKS IN NODEJS BUT NOT BUNJS FOR SOME REASON //////////////
             // // Query Fluffle

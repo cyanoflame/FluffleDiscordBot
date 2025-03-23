@@ -44,6 +44,7 @@ function toCommandOperation(argument: string): CommandOperation {
     }
 }
 
+// Run everything for the command management
 async function start(): Promise<void> {
 
     // Define the local commands here
