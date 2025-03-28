@@ -6,19 +6,34 @@
   "type": "module",
   "scripts": {
     "start": "bun run start:bot",
-    "start:bot": "bun --env-file=.env.production.local src/start-bot.ts",
+    "start:bot": "bun --env-file=.env src/start-bot.ts",
+    "commands:clear": "bun --env-file=.env src/command-manager.ts clear",
+    "commands:delete": "bun --env-file=.env src/command-manager.ts delete",
+    "commands:register": "bun --env-file=.env src/command-manager.ts register",
+    "commands:rename": "bun --env-file=.env src/command-manager.ts rename",
+    "commands:view": "bun --env-file=.env src/command-manager.ts view",
     "dev": "bun run dev:bot",
-    "dev:bot": "bun --env-file=.env.development.local --watch run src/start-bot.ts"
+    "dev:bot": "bun --env-file=.env.development.local --watch run src/start-bot.ts",
+    "dev:commands:clear": "bun --env-file=.env.development.local src/command-manager.ts clear",
+    "dev:commands:delete": "bun --env-file=.env.development.local src/command-manager.ts delete",
+    "dev:commands:register": "bun --env-file=.env.development.local src/command-manager.ts register",
+    "dev:commands:rename": "bun --env-file=.env.development.local src/command-manager.ts rename",
+    "dev:commands:view": "bun --env-file=.env.development.local src/command-manager.ts view"
   },
   "private": true,
   "devDependencies": {
     "@types/bun": "latest"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "^5.8.2"
   },
   "dependencies": {
     "discord.js": "^14.18.0",
+    "discord.js-rate-limiter": "^1.3.2",
+    "form-data-encoder": "^4.0.2",
+    "formdata-node": "^6.0.3",
+    "pino": "^9.6.0",
+    "pino-pretty": "^13.0.0",
     "sharp": "^0.33.5"
   }
 }
