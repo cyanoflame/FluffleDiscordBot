@@ -1,17 +1,22 @@
 import {
     AutocompleteInteraction,
     ButtonInteraction,
+    ChatInputCommandInteraction,
     Client,
     CommandInteraction,
     Events,
     Guild,
     Message,
     MessageReaction,
+    NewsChannel,
     RESTEvents,
+    TextChannel,
+    ThreadChannel,
     User
 } from "discord.js"
 
 import type {
+    Channel,
     ClientOptions,
     Interaction,
     PartialMessageReaction,
@@ -25,6 +30,8 @@ import LogMessageTemplates from "../../lang/logMessageTemplates.json"
 import { PartialUtils } from "../utils/partialUtils"
 import type { MsgTrigger } from "../msgTriggers/MsgTrigger"
 import type { EventDataService } from "../services/eventDataService"
+import type { Command } from "../commands/Command"
+import type { SlashCommand } from "../commands/slash/SlashCommand"
 
 /**
  * This class is used for the
@@ -103,8 +110,10 @@ class DiscordBot {
         // )
         // this.client.on(Events.GuildCreate, (guild: Guild) => this.onGuildJoin(guild))
         // this.client.on(Events.GuildDelete, (guild: Guild) => this.onGuildLeave(guild))
+        // MessageTriggers
         this.client.on(Events.MessageCreate, (msg: Message) => this.onMessage(msg))
-        // this.client.on(Events.InteractionCreate, (intr: Interaction) => this.onInteraction(intr))
+        // Commands
+        this.client.on(Events.InteractionCreate, (interaction: Interaction) => this.onInteraction(interaction))
         // this.client.on(
         //     Events.MessageReactionAdd,
         //     (messageReaction: MessageReaction | PartialMessageReaction, user: User | PartialUser) =>
@@ -223,7 +232,7 @@ class DiscordBot {
 
             // Find the msgTriggers that are current active
             let activeMsgTrigger = this.msgTriggers.filter(msgTrigger => {
-                if (msgTrigger.requireGuild && !msg.guild) {
+                if (msgTrigger.isGuildRequired() && !msg.guild) {
                     return false
                 }
     
@@ -255,28 +264,122 @@ class DiscordBot {
         }
     }
 
-    // private async onInteraction(intr: Interaction): Promise<void> {
-    //     if (
-    //         !this.ready ||
-    //         (Debug.dummyMode.enabled && !Debug.dummyMode.whitelist.includes(intr.user.id))
-    //     ) {
-    //         return
-    //     }
+    private async onInteraction(interaction: Interaction): Promise<void> {
+        // Do not do anything if the bot is not ready, and do not respond 
+        // to anything from the bot itself or the system
+        if (!this.ready || interaction.user.id === interaction.client.user?.id || interaction.user.bot) {
+            return
+        }
 
-    //     if (intr instanceof CommandInteraction || intr instanceof AutocompleteInteraction) {
-    //         try {
-    //             await this.commandHandler.process(intr)
-    //         } catch (error) {
-    //             Logger.error(LogMessageTemplates.error.command, error)
-    //         }
-    //     } else if (intr instanceof ButtonInteraction) {
-    //         try {
-    //             await this.buttonHandler.process(intr)
-    //         } catch (error) {
-    //             Logger.error(LogMessageTemplates.error.button, error)
-    //         }
-    //     }
-    // }
+        // If running a command or autocompleteInteraction
+        if (interaction instanceof CommandInteraction || interaction instanceof AutocompleteInteraction) {
+            try {
+                let commandParts = interaction instanceof ChatInputCommandInteraction || interaction instanceof AutocompleteInteraction ? 
+                    [
+                        interaction.commandName,
+                        interaction.options.getSubcommandGroup(false),
+                        interaction.options.getSubcommand(false),
+                    ].filter(Boolean)
+                    : [interaction.commandName];
+                let commandName = commandParts.join(' ');
+
+                // Try to find the command the user wants
+                // let command = CommandUtils.findCommand(this.commands, commandParts);
+                let command: Command = undefined as unknown as Command // TEMPORARY
+                // ^^ MOVING TO COMMANDSTORE OBJECT
+
+                if (!command) {
+                    Logger.error(
+                        LogMessageTemplates.error.commandNotFound
+                            .replaceAll('{INTERACTION_ID}', interaction.id)
+                            .replaceAll('{COMMAND_NAME}', commandName)
+                    );
+                    return;
+                }
+
+                // autocomplete interaction
+                if (interaction instanceof AutocompleteInteraction) {
+                    // if (!command.autocomplete) {
+                    //     Logger.error(
+                    //         LogMessageTemplates.error.autocompleteNotFound
+                    //             .replaceAll('{INTERACTION_ID}', interaction.id)
+                    //             .replaceAll('{COMMAND_NAME}', commandName)
+                    //     );
+                    //     return;
+                    // }
+        
+                    try {
+                        let option = interaction.options.getFocused(true);
+                        let choices = await (command as SlashCommand).autocomplete(interaction, option);
+                        // await InteractionUtils.respond(
+                        //     interaction,
+                        //     choices?.slice(0, DiscordLimits.CHOICES_PER_AUTOCOMPLETE)
+                        // );
+                    } catch (error) {
+                        Logger.error(
+                            interaction.channel instanceof TextChannel ||
+                            interaction.channel instanceof NewsChannel ||
+                            interaction.channel instanceof ThreadChannel
+                                ? LogMessageTemplates.error.autocompleteGuild
+                                      .replaceAll('{INTERACTION_ID}', interaction.id)
+                                      .replaceAll('{OPTION_NAME}', commandName)
+                                      .replaceAll('{COMMAND_NAME}', commandName)
+                                      .replaceAll('{USER_TAG}', interaction.user.tag)
+                                      .replaceAll('{USER_ID}', interaction.user.id)
+                                      .replaceAll('{CHANNEL_NAME}', interaction.channel.name)
+                                      .replaceAll('{CHANNEL_ID}', interaction.channel.id)
+                                      .replaceAll('{GUILD_NAME}', interaction.guild?.name ?? "UNDEFINED")
+                                      .replaceAll('{GUILD_ID}', interaction.guild?.id ?? "UNDEFINED")
+                                : LogMessageTemplates.error.autocompleteOther
+                                      .replaceAll('{INTERACTION_ID}', interaction.id)
+                                      .replaceAll('{OPTION_NAME}', commandName)
+                                      .replaceAll('{COMMAND_NAME}', commandName)
+                                      .replaceAll('{USER_TAG}', interaction.user.tag)
+                                      .replaceAll('{USER_ID}', interaction.user.id),
+                            error
+                        );
+                    }
+                    return;
+                } else {
+                    // For any command interactions
+
+                    // Check for permissions (this could be imp0lemented as a proxy class as well if necessary)
+                    if(command.canUseCommand(interaction)) {
+
+                        // Get the event data
+                        let data = await this.eventDataService.create({
+                            user: interaction.client.user,
+                            channel: interaction.channel ? interaction.channel as Channel : undefined,
+                            guild: interaction.guild ?? undefined,
+                        });
+
+                        // Check the command permissions for the user
+                        command.execute(interaction, data);
+                    } else {
+                        // if the user is unable to use the command, tell them why
+                        // await InteractionUtils.send(
+                        //     intr,
+                        //     Lang.getEmbed('validationEmbeds.missingClientPerms', data.lang, {
+                        //         PERMISSIONS: command.requireClientPerms
+                        //             .map(perm => `**${Permission.Data[perm].displayName(data.lang)}**`)
+                        //             .join(', '),
+                        //     })
+                        // );
+                    }
+                }
+            } catch (error) {
+                Logger.error(LogMessageTemplates.error.command, error)
+            }
+        }
+
+        // else if (interaction instanceof ButtonInteraction) {
+        //     try {
+        //         await this.buttonHandler.process(interaction)
+        //     } catch (error) {
+        //         Logger.error(LogMessageTemplates.error.button, error)
+        //     }
+        // }
+    }
 
     // private async onReaction(
     //     msgReaction: MessageReaction | PartialMessageReaction,

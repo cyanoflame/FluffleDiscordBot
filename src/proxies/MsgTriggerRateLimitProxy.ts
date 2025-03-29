@@ -18,9 +18,6 @@ export class MsgTriggerRateLimitProxy implements MsgTrigger {
     /** The reference to the proxied object */
     private msgTrigger: MsgTrigger
 
-    /** Whether or not the proxied MsgTrigger requires a guild to use or not */
-    public requireGuild: boolean
-
     /** The name of the proxy - used to identify it the proxy in logs */
     private proxyName: string
 
@@ -30,7 +27,7 @@ export class MsgTriggerRateLimitProxy implements MsgTrigger {
      * rateLimitAmount - The amount of requests that can be made within an interval before limiting the rate ; and rateLimitInterval - The 
      * time that a the amount of requests can be made in before triggering a rate limit,
      * @param proxyName The name of the the proxy, used to identify it in logging.
-     * @param msgTrigger The msgTrigger object that is being proxied.
+     * @param msgTrigger The msgTrigger object that is being rate limited.
      */
     constructor(rateLimiter: {rateLimitAmount: number, rateLimitInterval: number} | RateLimiter, proxyName: string, msgTrigger: MsgTrigger) {
         // if the ratelimiter is predefined, then set that. Otherwise, make a new one
@@ -48,8 +45,6 @@ export class MsgTriggerRateLimitProxy implements MsgTrigger {
         // Store the reference to the proxied object
         this.msgTrigger = msgTrigger
 
-        // Store the reference to the proxied object's attributes
-        this.requireGuild = this.msgTrigger.requireGuild
         // Store the name of the proxy - used for logging
         this.proxyName = proxyName
     }
@@ -80,6 +75,14 @@ export class MsgTriggerRateLimitProxy implements MsgTrigger {
     }
 
     /**
+     * This message returns the value from the concrete object for whether or not it requires a guild.
+     * @returns The response from the concrete object.
+     */
+    public isGuildRequired(): boolean {
+        return this.msgTrigger.isGuildRequired()
+    }
+
+    /**
      * This method will perform the check for the rate limit. If it succeeds, then it will
      * @param msg The message causing the trigger.
      */
@@ -106,7 +109,7 @@ export class MsgTriggerRateLimitProxy implements MsgTrigger {
     }
     
     /**
-     * Execuite the concrete object like normal. Nothing to do here since rate limiting involved the checks.
+     * Execute the concrete object like normal. Nothing to do here since rate limiting involved the checks.
      * @param msg The message casuing the trigger.
      * @param data The data related to the event, passed in from the EventDataService.
      */

@@ -8,8 +8,11 @@ import { EventData } from '../models/eventData.ts'
  */
 export interface MsgTrigger {
 
-    /** Whether or not a the guild the message originates from is necessary or not */
-    requireGuild: boolean;
+    /**
+     * Return whether or not a the guild the message must have originated from a guild or not.
+     * @returns whether or not the message trigger requires the guild to run.
+     */
+    isGuildRequired(): boolean;
     
     /**
      * This is the method used to check the conditions for whether or not the trigger will be executed.

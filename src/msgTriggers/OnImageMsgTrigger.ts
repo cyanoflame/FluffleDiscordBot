@@ -122,8 +122,14 @@ function parseResults(fluffleResult: FluffleResult): string {
  */
 export class OnImageMsgTrigger implements MsgTrigger {
     
-    /** This event does not need the message guild to run */
-    public readonly requireGuild: boolean = false
+    /**
+     * This event does not need the message guild to run.
+     * @returns false
+     */
+    public isGuildRequired(): boolean {
+        return false
+    }
+    
 
     /**
      * Creates a new MsgTrigger.
