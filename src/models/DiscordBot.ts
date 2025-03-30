@@ -39,23 +39,31 @@ import { CommandError } from "../commands/CommandError"
 
 import LogMessageTemplates from "../../lang/logMessageTemplates.json"
 import CommonLanguageElements from "../../lang/common.json"
+import { CommandStore } from "./CommandStore"
+import { DiscordLimits } from "../constants/DiscordLimits"
 
 /**
  * This class is used for the
  */
 class DiscordBot {
     /** The Discord Client/bot itself */
-    private client: Client
+    private client: Client;
+
     /** Whether or not the bot is connected, setup and ready to work */
-    private ready = false
+    private ready = false;
+
     /** The discord bot token */
-    private token: string
+    private token: string;
 
     /** The current list of active message triggers */
-    private msgTriggers: MsgTrigger[]
+    private msgTriggers: MsgTrigger[];
+
+    /** This is where the commands used by the bot are stored */
+    private commands: CommandStore;
 
     /** This is a placeholder while I figure out a better way of implementing it. */
-    private eventDataService: EventDataService
+    private eventDataService: EventDataService;
+
     
     // /** The handler that runs when the bot joins a guild */
     // private guildJoinHandler: GuildJoinHandler
@@ -63,8 +71,6 @@ class DiscordBot {
     // private guildLeaveHandler: GuildLeaveHandler
     // /** The handler that deals with responding to messages/triggers */
     // // private messageHandlers: MessageHandler
-    // /** The handler that deals with responding to commands */
-    // private commandHandler: CommandHandler
     // /** The handler that deals with responding to buttons */
     // private buttonHandler: ButtonHandler
     // /** The handler that deals with responding to reactions */
@@ -88,13 +94,14 @@ class DiscordBot {
         // Create the message trigger map
         this.msgTriggers = []
 
+        // Create the command storage
+        this.commands = new CommandStore();
+
         // TEMPORARY
         this.eventDataService = eventDataService
         
         // this.guildJoinHandler = guildJoinHandler
         // this.guildLeaveHandler = guildLeaveHandler
-        // this.messageHandler = messageHandler
-        // this.commandHandler = commandHandler
         // this.buttonHandler = buttonHandler
         // this.reactionHandler = reactionHandler
     }
@@ -118,9 +125,9 @@ class DiscordBot {
         // this.client.on(Events.GuildCreate, (guild: Guild) => this.onGuildJoin(guild))
         // this.client.on(Events.GuildDelete, (guild: Guild) => this.onGuildLeave(guild))
         // MessageTriggers
-        this.client.on(Events.MessageCreate, (msg: Message) => this.onMessage(msg))
-        // Commands
-        this.client.on(Events.InteractionCreate, (interaction: Interaction) => this.onInteraction(interaction))
+        this.client.on(Events.MessageCreate, (msg: Message) => this.onMessage(msg));
+        // Interactions (commands & buttons)
+        this.client.on(Events.InteractionCreate, (interaction: Interaction) => this.onInteraction(interaction));
         // this.client.on(
         //     Events.MessageReactionAdd,
         //     (messageReaction: MessageReaction | PartialMessageReaction, user: User | PartialUser) =>
@@ -195,8 +202,8 @@ class DiscordBot {
     /**
      * This method is used to remove a MsgTrigger specified by its index in the array. Removing it will make the bot
      * no longer check for/use it.
-     * @param index The index of the msgTrigger being removed from the array storing them. This should've been 
-     * returned when it was added.
+     * @param index The index of the msgTrigger being removed from the array storing them. This was returned when 
+     * it was added. Otherwise, you can remove it by referencing the object itself.
      * @returns whether or not it was removed successfully or not. It will return false if the index is out of bounds.
      */
     public removeMsgTriggerIndex(index: number): boolean {
@@ -271,6 +278,11 @@ class DiscordBot {
         }
     }
 
+    /**
+     * This is the method that's called when any interaction is checked by the bot. Interactions include commands,
+     * autocomplete commands, and button interactions.
+     * @param interaction The interaction being checked by the bot.
+     */
     private async onInteraction(interaction: Interaction): Promise<void> {
         // Do not do anything if the bot is not ready, and do not respond 
         // to anything from the bot itself or the system
@@ -278,131 +290,172 @@ class DiscordBot {
             return
         }
 
-        // If running a command or autocompleteInteraction
-        if (interaction instanceof CommandInteraction || interaction instanceof AutocompleteInteraction) {
-            try {
-                let commandParts = interaction instanceof ChatInputCommandInteraction || interaction instanceof AutocompleteInteraction ? 
-                    [
-                        interaction.commandName,
-                        interaction.options.getSubcommandGroup(false),
-                        interaction.options.getSubcommand(false),
-                    ].filter(Boolean)
-                    : [interaction.commandName];
-                let commandName = commandParts.join(' ');
+        // if the interaction is a command or autocompleteInteraction
+        if (interaction instanceof AutocompleteInteraction || interaction instanceof CommandInteraction) {
+            await this.onCommand(interaction);
+        } else 
+        // if the interaction originated from a button
+        if (interaction instanceof ButtonInteraction) {
+            throw new Error("NOT IMPLEMENTED YET");
+            // await this.onButtonInteraction(interaction);
 
-                // Try to find the command the user wants
-                // let command = CommandUtils.findCommand(this.commands, commandParts);
-                let command: Command = undefined as unknown as Command // TEMPORARY
-                // ^^ MOVING TO COMMANDSTORE OBJECT
+            // try {
+            //     await this.buttonHandler.process(interaction)
+            // } catch (error) {
+            //     // log the error from the interaction
+            //     Logger.error(LogMessageTemplates.error.button, error)
+            // }
+        }
+    }
 
-                if (!command) {
-                    Logger.error(
-                        LogMessageTemplates.error.commandNotFound
-                            .replaceAll('{INTERACTION_ID}', interaction.id)
-                            .replaceAll('{COMMAND_NAME}', commandName)
-                    );
-                    return;
-                }
+    /**
+     * This method is used to add a Command to the bot for it to use.
+     * @param command The command that will be added to the bot to be used.
+     * @returns The index of the command in the command collection, which could be used to remove it.
+     */
+    public addCommand(command: Command): number {
+        return this.commands.addCommand(command);
+    }
 
-                // autocomplete interaction
-                if (interaction instanceof AutocompleteInteraction) {
-                    // not used anymore with current object typing
-                    // if (!command.autocomplete) {
-                    //     Logger.error(
-                    //         LogMessageTemplates.error.autocompleteNotFound
-                    //             .replaceAll('{INTERACTION_ID}', interaction.id)
-                    //             .replaceAll('{COMMAND_NAME}', commandName)
-                    //     );
-                    //     return;
-                    // }
-        
-                    try {
-                        let option = interaction.options.getFocused(true);
-                        let choices = await (command as SlashCommand).autocomplete(interaction, option);
-                        // await InteractionUtils.respond(
-                        //     interaction,
-                        //     choices?.slice(0, DiscordLimits.CHOICES_PER_AUTOCOMPLETE)
-                        // );
-                    } catch (error) {
-                        Logger.error(
-                            interaction.channel instanceof TextChannel ||
-                            interaction.channel instanceof NewsChannel ||
-                            interaction.channel instanceof ThreadChannel
-                                ? LogMessageTemplates.error.autocompleteGuild
-                                      .replaceAll('{INTERACTION_ID}', interaction.id)
-                                      .replaceAll('{OPTION_NAME}', commandName)
-                                      .replaceAll('{COMMAND_NAME}', commandName)
-                                      .replaceAll('{USER_TAG}', interaction.user.tag)
-                                      .replaceAll('{USER_ID}', interaction.user.id)
-                                      .replaceAll('{CHANNEL_NAME}', interaction.channel.name)
-                                      .replaceAll('{CHANNEL_ID}', interaction.channel.id)
-                                      .replaceAll('{GUILD_NAME}', interaction.guild?.name ?? "UNDEFINED")
-                                      .replaceAll('{GUILD_ID}', interaction.guild?.id ?? "UNDEFINED")
-                                : LogMessageTemplates.error.autocompleteOther
-                                      .replaceAll('{INTERACTION_ID}', interaction.id)
-                                      .replaceAll('{OPTION_NAME}', commandName)
-                                      .replaceAll('{COMMAND_NAME}', commandName)
-                                      .replaceAll('{USER_TAG}', interaction.user.tag)
-                                      .replaceAll('{USER_ID}', interaction.user.id),
-                            error
-                        );
-                    }
-                    return;
-                } else {
-                    // For any command interactions
+    /**
+     * This method is used to remove a Command specified by its index in the array. Removing it will make the bot
+     * no longer check for/use it.
+     * @param index The index of the command being removed from the command collection storing them. This was returned when 
+     * it was added. Otherwise, you can remove it by referencing the object itself.
+     * @returns Whether or not it was removed successfully or not. It will return false if the index is out of bounds.
+     */
+    public removeCommandIndex(index: number): boolean {
+        return this.commands.removeCommandIndex(index);
+    }
 
-                    // Check for permissions (this could be imp0lemented as a proxy class as well if necessary)
-                    try {
-                        // Check whether the command can be used or not
-                        command.checkUsability(interaction);
+    /**
+     * This method is used to remove a Command specified by the object itself. Removing it will make the bot
+     * no longer check for/use it.
+     * @param command The command object itself that's being removed from the array storing them.
+     * @returns @returns Whether or not it was removed successfully or not. It will return false if it did not exist in the array.
+     */
+    public removeCommand(command: Command): boolean {
+        return this.commands.removeCommand(command);
+    }
 
-                        // Get the event data
-                        let data = await this.eventDataService.create({
-                            user: interaction.client.user,
-                            channel: interaction.channel ? interaction.channel as Channel : undefined,
-                            guild: interaction.guild ?? undefined,
-                        });
-
-                        // Check the command permissions for the user
-                        command.execute(this.client, interaction, data);
-                    } catch(err) {
-                        // If the user to run the command inform them why
-                        if(err instanceof CommandError) {
-                            // // Get the event data
-                            // let data = await this.eventDataService.create({
-                            //     user: interaction.client.user,
-                            //     channel: interaction.channel ? interaction.channel as Channel : undefined,
-                            //     guild: interaction.guild ?? undefined,
-                            // });
-                            
-                            await interaction.followUp({
-                                flags: (command.getDeferType() == CommandDeferType.HIDDEN) ? "Ephemeral" : undefined, // maintain the defer type of the command
-                                embeds: [
-                                    new EmbedBuilder({
-                                        description: err.message,
-                                        color: resolveColor(CommonLanguageElements.colors.warning as ColorResolvable),
-                                    })
-                                ],
-                                withResponse: !(interaction.deferred || interaction.replied)
-                            });
-                        } else {
-                            // if any other error, propagate it
-                            throw err;
-                        }
-                    }
-                }
-            } catch (error) {
-                Logger.error(LogMessageTemplates.error.command, error)
+    /**
+     * This is the method that's called when any interaction is checked by the bot. Interactions include commands,
+     * autocomplete commands, and button interactions.
+     * @param interaction The interaction being checked by the bot.
+     */
+    private async onCommand(interaction: AutocompleteInteraction | CommandInteraction): Promise<void> {
+        // Get the parts of the command to identify it
+        let commandParts: string[] = [interaction.commandName]
+        if(interaction instanceof ChatInputCommandInteraction || interaction instanceof AutocompleteInteraction) {
+            let subcommandGroup = interaction.options.getSubcommandGroup(false);
+            if(subcommandGroup != null) {
+                commandParts.push(subcommandGroup)
+            }
+            let subcommand = interaction.options.getSubcommand(false);
+            if(subcommand != null) {
+                commandParts.push(subcommand)
             }
         }
 
-        // else if (interaction instanceof ButtonInteraction) {
-        //     try {
-        //         await this.buttonHandler.process(interaction)
-        //     } catch (error) {
-        //         Logger.error(LogMessageTemplates.error.button, error)
-        //     }
-        // }
+        // try to find the command the user wants
+        let command = this.commands.findCommand(commandParts);
+
+        // Find the command name
+        let commandName = commandParts.join(' ');
+
+        // if there is no valid command found
+        if (!command) {
+            Logger.error(
+                LogMessageTemplates.error.commandNotFound
+                    .replaceAll('{INTERACTION_ID}', interaction.id)
+                    .replaceAll('{COMMAND_NAME}', commandName)
+            );
+            return;
+        }
+
+        // autocomplete interaction
+        if (interaction instanceof AutocompleteInteraction) {
+            try {
+                // Get the potential options for a command to be autocompleted
+                let option = interaction.options.getFocused(true);
+                // Get the choices available for the auto complete options
+                let choices = await (command as SlashCommand).autocomplete(interaction, option);
+                // Respond with the auto complete options if there are any
+                await interaction.respond(choices? choices.slice(0, DiscordLimits.CHOICES_PER_AUTOCOMPLETE) : []);
+                
+            } catch (error) {
+                // Catch anyt autocomplete error
+                Logger.error(
+                    interaction.channel instanceof TextChannel ||
+                    interaction.channel instanceof NewsChannel ||
+                    interaction.channel instanceof ThreadChannel
+                        ? LogMessageTemplates.error.autocompleteGuild
+                                .replaceAll('{INTERACTION_ID}', interaction.id)
+                                .replaceAll('{OPTION_NAME}', commandName)
+                                .replaceAll('{COMMAND_NAME}', commandName)
+                                .replaceAll('{USER_TAG}', interaction.user.tag)
+                                .replaceAll('{USER_ID}', interaction.user.id)
+                                .replaceAll('{CHANNEL_NAME}', interaction.channel.name)
+                                .replaceAll('{CHANNEL_ID}', interaction.channel.id)
+                                .replaceAll('{GUILD_NAME}', interaction.guild?.name ?? "UNDEFINED")
+                                .replaceAll('{GUILD_ID}', interaction.guild?.id ?? "UNDEFINED")
+                        : LogMessageTemplates.error.autocompleteOther
+                                .replaceAll('{INTERACTION_ID}', interaction.id)
+                                .replaceAll('{OPTION_NAME}', commandName)
+                                .replaceAll('{COMMAND_NAME}', commandName)
+                                .replaceAll('{USER_TAG}', interaction.user.tag)
+                                .replaceAll('{USER_ID}', interaction.user.id),
+                    error
+                );
+            }
+            return;
+        } else {
+            // For any command interactions
+
+            // Check for permissions (this could be imp0lemented as a proxy class as well if necessary)
+            try {
+                // Check whether the command can be used or not
+                command.checkUsability(interaction);
+
+                // Get the event data
+                let data = await this.eventDataService.create({
+                    user: interaction.client.user,
+                    channel: interaction.channel ? interaction.channel as Channel : undefined,
+                    guild: interaction.guild ?? undefined,
+                });
+
+                // Check the command permissions for the user
+                command.execute(this.client, interaction, data);
+            } catch(err) {
+                // if the user to run the command inform them why
+                if(err instanceof CommandError) {
+                    // // Get the event data
+                    // let data = await this.eventDataService.create({
+                    //     user: interaction.client.user,
+                    //     channel: interaction.channel ? interaction.channel as Channel : undefined,
+                    //     guild: interaction.guild ?? undefined,
+                    // });
+
+                    // Log the command error
+                    Logger.error(LogMessageTemplates.error.command, err);
+                    
+                    // Respond to the commadn with the error response
+                    await interaction.followUp({
+                        flags: (command.getDeferType() == CommandDeferType.HIDDEN) ? "Ephemeral" : undefined, // maintain the defer type of the command
+                        embeds: [
+                            new EmbedBuilder({
+                                description: err.message,
+                                color: resolveColor(CommonLanguageElements.colors.warning as ColorResolvable),
+                            })
+                        ],
+                        withResponse: !(interaction.deferred || interaction.replied)
+                    });
+                } else {
+                    // if any other error, propagate the error
+                    throw err;
+                }
+            }
+        }
     }
 
     // private async onReaction(
