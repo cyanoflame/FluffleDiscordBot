@@ -4,11 +4,13 @@ import {
     ChatInputCommandInteraction,
     Client,
     CommandInteraction,
+    EmbedBuilder,
     Events,
     Guild,
     Message,
     MessageReaction,
     NewsChannel,
+    resolveColor,
     RESTEvents,
     TextChannel,
     ThreadChannel,
@@ -18,7 +20,9 @@ import {
 import type {
     Channel,
     ClientOptions,
+    ColorResolvable,
     Interaction,
+    InteractionReplyOptions,
     PartialMessageReaction,
     PartialUser,
     RateLimitData,
@@ -26,12 +30,15 @@ import type {
 
 import { Logger } from "../services/logger"
 
-import LogMessageTemplates from "../../lang/logMessageTemplates.json"
 import { PartialUtils } from "../utils/partialUtils"
 import type { MsgTrigger } from "../msgTriggers/MsgTrigger"
 import type { EventDataService } from "../services/eventDataService"
-import type { Command } from "../commands/Command"
+import { CommandDeferType, type Command } from "../commands/Command"
 import type { SlashCommand } from "../commands/slash/SlashCommand"
+import { CommandError } from "../commands/CommandError"
+
+import LogMessageTemplates from "../../lang/logMessageTemplates.json"
+import CommonLanguageElements from "../../lang/common.json"
 
 /**
  * This class is used for the
@@ -299,6 +306,7 @@ class DiscordBot {
 
                 // autocomplete interaction
                 if (interaction instanceof AutocompleteInteraction) {
+                    // not used anymore with current object typing
                     // if (!command.autocomplete) {
                     //     Logger.error(
                     //         LogMessageTemplates.error.autocompleteNotFound
@@ -344,7 +352,9 @@ class DiscordBot {
                     // For any command interactions
 
                     // Check for permissions (this could be imp0lemented as a proxy class as well if necessary)
-                    if(command.canUseCommand(interaction)) {
+                    try {
+                        // Check whether the command can be used or not
+                        command.checkUsability(interaction);
 
                         // Get the event data
                         let data = await this.eventDataService.create({
@@ -354,17 +364,31 @@ class DiscordBot {
                         });
 
                         // Check the command permissions for the user
-                        command.execute(interaction, data);
-                    } else {
-                        // if the user is unable to use the command, tell them why
-                        // await InteractionUtils.send(
-                        //     intr,
-                        //     Lang.getEmbed('validationEmbeds.missingClientPerms', data.lang, {
-                        //         PERMISSIONS: command.requireClientPerms
-                        //             .map(perm => `**${Permission.Data[perm].displayName(data.lang)}**`)
-                        //             .join(', '),
-                        //     })
-                        // );
+                        command.execute(this.client, interaction, data);
+                    } catch(err) {
+                        // If the user to run the command inform them why
+                        if(err instanceof CommandError) {
+                            // // Get the event data
+                            // let data = await this.eventDataService.create({
+                            //     user: interaction.client.user,
+                            //     channel: interaction.channel ? interaction.channel as Channel : undefined,
+                            //     guild: interaction.guild ?? undefined,
+                            // });
+                            
+                            await interaction.followUp({
+                                flags: (command.getDeferType() == CommandDeferType.HIDDEN) ? "Ephemeral" : undefined, // maintain the defer type of the command
+                                embeds: [
+                                    new EmbedBuilder({
+                                        description: err.message,
+                                        color: resolveColor(CommonLanguageElements.colors.warning as ColorResolvable),
+                                    })
+                                ],
+                                withResponse: !(interaction.deferred || interaction.replied)
+                            });
+                        } else {
+                            // if any other error, propagate it
+                            throw err;
+                        }
                     }
                 }
             } catch (error) {

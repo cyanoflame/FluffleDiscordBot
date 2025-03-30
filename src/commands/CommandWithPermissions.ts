@@ -1,5 +1,6 @@
 // commands/Command.ts
 import {
+    Client,
     GuildChannel,
     ThreadChannel,
     type CommandInteraction,
@@ -9,6 +10,7 @@ import {
 
 import { EventData } from '../models/eventData';
 import type { Command, CommandDeferType } from './Command';
+import { CommandError } from './CommandError';
 
 /**
  * This class serves as a base for a simple command that only checks against permissions to see if it 
@@ -46,27 +48,38 @@ export abstract class CommandWithPermissions implements Command {
     abstract getMetadata(): RESTPostAPIChatInputApplicationCommandsJSONBody;
 
     /**
-     * This is the method used to check whether or not the user has the permissions to run the command or not.
-     * @param interaction The command interaction causing the trigger.
-     * @return Whether or not the user has permission to run the command or not
+     * This is the method used to check whether or not the user has the permissions to run the command or not. If the command cannot be 
+     * run, a CommandError should be thrown stating the reason it will not run. This error will be returned to 
+     * @param interaction The command interaction being run.
+     * @throws CommandError with the permissions not met by the user running the command.
      */
-    public canUseCommand(interaction: CommandInteraction): boolean {
+    public checkUsability(interaction: CommandInteraction) {
         if(interaction.channel instanceof GuildChannel || interaction.channel instanceof ThreadChannel) {
             // get user permissions
             let userPermissions = interaction.channel!.permissionsFor(interaction.client.user)
-            if(userPermissions && userPermissions.has(this.getRequiredClientPermissions())) {
-                // The user has permissions needed
-                return true
+            if(!(userPermissions && userPermissions.has(this.getRequiredClientPermissions()))) {
+                // Stop execution because permissions are good
+                return 
+            } else {
+                // Throw an error because the user permissions didn't match
+                throw new CommandError(
+                    this.getRequiredClientPermissions()
+                    .map(permission => `**${permission}**`) // TODO: Language support for this (instead of using enum map to function)
+                    .join(', ')
+                )
             }
+        } else {
+            // Throw an error because invalid channel type to run commands in
+            throw new CommandError("Command cannot be run in channel type") // TODO: Language support for this
         }
-        return false
     }
 
     /**
      * This function will execute whenever the command is called.
+     * @param client The Discord client to run any commands to interact with Discord.
      * @param interaction The interaction causing the command to be triggered.
      * @param data The data related to the event, passed in from the EventDataService.
      */
-    abstract execute(interaction: CommandInteraction, data: EventData): Promise<void>;
+    abstract execute(client: Client, interaction: CommandInteraction, data: EventData): Promise<void>;
 
 }

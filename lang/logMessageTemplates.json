@@ -31,6 +31,7 @@
     },
     "error": {
         "userMessageRateLimit": "Message rate limit reached by '{USER_TAG}' ({USER_ID}) for trigger '{TRIGGER_NAME}'.",
+        "userCommandRateLimit": "Command rate limit reached by '{USER_TAG}' ({USER_ID}) for command '{COMMAND_NAME}'.",
         "unspecified": "An unspecified error occurred.",
         "unhandledRejection": "An unhandled promise rejection occurred.",
         "retrieveShards": "An error occurred while retrieving which shards to spawn.",

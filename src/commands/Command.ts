@@ -1,17 +1,15 @@
 // commands/Command.ts
 import type {
-    ApplicationCommandOptionChoiceData,
-    AutocompleteFocusedOption,
-    AutocompleteInteraction,
+    Client,
     CommandInteraction,
-    PermissionsString,
     RESTPostAPIChatInputApplicationCommandsJSONBody,
 } from 'discord.js';
 
 import { EventData } from '../models/eventData';
 
 /**
- * This class defines the structure of a basic slash command.
+ * This class defines the structure used by all commands and command types.
+ * Command metadata is also stored with the command objects themselves.
  */
 export interface Command {
     
@@ -39,18 +37,20 @@ export interface Command {
     getMetadata(): RESTPostAPIChatInputApplicationCommandsJSONBody;
 
     /**
-     * This is the method used to check whether or not the command can be run by the user.
-     * @param interaction The command interaction causing the trigger.
-     * @return Whether or not the commmand is able to run.
+     * This is the method used to check whether or not the command can be run by the user. If the command cannot be 
+     * run, a CommandError should be thrown stating the reason it will not run. This error will be returned to 
+     * @param interaction The command interaction being run.
+     * @throws CommandError if the command is found to be unable to run.
      */
-    canUseCommand(interaction: CommandInteraction): boolean;
+    checkUsability(interaction: CommandInteraction): void;
 
     /**
      * This function will execute whenever the command is called.
+     * @param client The Discord client to run any commands to interact with Discord.
      * @param interaction The interaction causing the command to be triggered.
      * @param data The data related to the event, passed in from the EventDataService.
      */
-    execute(interaction: CommandInteraction, data: EventData): Promise<void>;
+    execute(client: Client, interaction: CommandInteraction, data: EventData): Promise<void>;
 }
 
 /**

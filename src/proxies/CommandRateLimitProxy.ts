@@ -1,10 +1,11 @@
 import { RateLimiter } from 'discord.js-rate-limiter'
-import type { Command } from '../commands/Command'
-import type { Client, Message } from 'discord.js'
+import type { Command, CommandDeferType } from '../commands/Command'
+import type { Client, CommandInteraction, Interaction, Message, RESTPostAPIChatInputApplicationCommandsJSONBody } from 'discord.js'
 import type { EventData } from '../models/eventData'
 import { Logger } from '../services/logger'
 
 import LogMessageTemplates from "../../lang/logMessageTemplates.json"
+import { CommandError } from '../commands/CommandError'
 
 /**
  * This class is used to add a rate limiter to a command as a proxy. This keeps the implementation 
@@ -17,9 +18,6 @@ export class CommandRateLimitProxy implements Command {
 
     /** The reference to the proxied object */
     private command: Command
-
-    /** Whether or not the proxied MsgTrigger requires a guild to use or not */
-    public requireGuild: boolean
 
     /** The name of the proxy - used to identify it the proxy in logs */
     private proxyName: string
@@ -47,6 +45,9 @@ export class CommandRateLimitProxy implements Command {
 
         // Store the reference to the proxied object
         this.command = command
+
+        // Store the name of the proxy - used for logging
+        this.proxyName = proxyName
     }
 
     /**
@@ -75,38 +76,68 @@ export class CommandRateLimitProxy implements Command {
     }
 
     /**
+     * Returns the names that define the command.
+     * @returns the names that define the command.
+     */
+    public getNames(): string[] {
+        return this.command.getNames();
+    }
+    
+    /** 
+     * Discord requires a response from a command in 3 seconds or become invalid. If a 
+     * response will take longer than that, the response will need to be deferred, sending a 
+     * message "<app/bot> is thinking..." as a first response. This gives the response a 15
+     * minute window to actually respond.
+     * See https://discordjs.guide/slash-commands/response-methods.html#deferred-responses
+     * 
+     * @returns If the command needs to be deferred, then should return a CommandDeferType. If not, it should return undefined.
+     */
+    public getDeferType(): CommandDeferType | undefined {
+        return this.command.getDeferType();
+    }
+
+    /**
+     * This method is used to get the metadata for the command.
+     * @returns The metadata of the command.
+     */
+    public getMetadata(): RESTPostAPIChatInputApplicationCommandsJSONBody {
+        return this.command.getMetadata()
+    }
+
+    /**
      * This method will perform the check for the rate limit. If it succeeds, then it will
      * @param msg The message causing the trigger.
      */
-    public triggered(msg: Message): boolean {
-        // Check if the trigger condition has been met FIRST, before checking the rate limit
-        // that way, the rate limit is NOT hit by random messages
-        let isTriggered = this.msgTrigger.triggered(msg)
-        if(isTriggered) {
-            // if the trigger is valid, then check for the rate limit
-            if(this.isRateLimited(msg.author.id)) {
-                // log the rate limit hit
-                Logger.error(LogMessageTemplates.error.userMessageRateLimit
-                    .replaceAll('{USER_TAG}', msg.author.tag)
-                    .replaceAll('{USER_ID}', msg.author.id)
-                    .replaceAll('{TRIGGER_NAME}', this.proxyName)
-                )
-                // if the user is rate limited, do NOT execute the trigger
-                return false
-            }
-        }
+    public checkUsability(interaction: CommandInteraction): void {
+        // Check before if there's anything else stopping it from running
+        this.command.checkUsability(interaction);
 
-        // Return whether it's triggered or not
-        return isTriggered
+        // if the trigger is valid, then check for the rate limit
+        if(this.isRateLimited(interaction.client.user.id)) {
+            // log the rate limit hit
+            Logger.error(LogMessageTemplates.error.userCommandRateLimit
+                .replaceAll('{USER_TAG}', interaction.client.user.tag)
+                .replaceAll('{USER_ID}', interaction.client.user.id)
+                .replaceAll('{COMMAND_NAME}', this.proxyName)
+            )
+
+            // if the user is rate limited, do NOT execute the trigger
+            // Throw an error because the user permissions didn't match
+            throw new CommandError(
+                // TODO: Language support for this
+                `You can only run this command ${this.rateLimiter.amount} time(s) every ${this.rateLimiter.interval + "ms"}. Please wait before attempting this command again.`
+            )
+        }
     }
     
     /**
      * Execuite the concrete object like normal. Nothing to do here since rate limiting involved the checks.
+     * @param client The Discord client to run any commands to interact with Discord.
      * @param msg The message casuing the trigger.
      * @param data The data related to the event, passed in from the EventDataService.
      */
-    public async execute(client: Client, msg: Message, data: EventData): Promise<void> {
-        await this.msgTrigger.execute(client, msg, data)
+    public async execute(client: Client, interaction: CommandInteraction, data: EventData): Promise<void> {
+        await this.command.execute(client, interaction, data)
     }
 
 }

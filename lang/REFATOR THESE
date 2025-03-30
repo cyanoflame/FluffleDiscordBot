@@ -1,0 +1,4 @@
+Refactoring Lang Todo: 
+1. Combine log message templates with the en-US -- so logs can be in other languages
+2. Use strategy pattern to build custom implementation
+3. Replace ALL the replace alls because they're SLOW AF
