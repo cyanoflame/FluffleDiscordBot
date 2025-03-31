@@ -291,7 +291,7 @@ class DiscordBot {
         }
 
         // if the interaction is a command or autocompleteInteraction
-        if (interaction instanceof AutocompleteInteraction || interaction instanceof CommandInteraction) {
+        if (interaction.isAutocomplete() || interaction.isCommand()) {
             await this.onCommand(interaction);
         } else 
         // if the interaction originated from a button
@@ -346,7 +346,7 @@ class DiscordBot {
     private async onCommand(interaction: AutocompleteInteraction | CommandInteraction): Promise<void> {
         // Get the parts of the command to identify it
         let commandParts: string[] = [interaction.commandName]
-        if(interaction instanceof ChatInputCommandInteraction || interaction instanceof AutocompleteInteraction) {
+        if(interaction.isChatInputCommand()|| interaction.isAutocomplete()) {
             let subcommandGroup = interaction.options.getSubcommandGroup(false);
             if(subcommandGroup != null) {
                 commandParts.push(subcommandGroup)
@@ -374,7 +374,7 @@ class DiscordBot {
         }
 
         // autocomplete interaction
-        if (interaction instanceof AutocompleteInteraction) {
+        if (interaction.isAutocomplete()) {
             try {
                 // Get the potential options for a command to be autocompleted
                 let option = interaction.options.getFocused(true);
