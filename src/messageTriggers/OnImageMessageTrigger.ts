@@ -1,4 +1,4 @@
-import type { MsgTrigger } from "./MsgTrigger.js"
+import type { MessageTrigger } from "./MessageTrigger.js"
 import { Attachment, Client, Message, TextChannel } from "discord.js"
 import type { Snowflake } from "discord.js"
 import sharp from "sharp"
@@ -120,7 +120,7 @@ function parseResults(fluffleResult: FluffleResult): string {
  * This is a trigger that occurs whenever an image is sent to a channel. It will auto search the 
  * image on Fluffle and responds to the message with any sources found.
  */
-export class OnImageMsgTrigger implements MsgTrigger {
+export class OnImageMessageTrigger implements MessageTrigger {
     
     /**
      * This event does not need the message guild to run.
@@ -132,7 +132,7 @@ export class OnImageMsgTrigger implements MsgTrigger {
     
 
     /**
-     * Creates a new MsgTrigger.
+     * Creates a new MessageTrigger.
      */
     constructor() {
         // doesnt need anything
@@ -146,7 +146,7 @@ export class OnImageMsgTrigger implements MsgTrigger {
      * @param msg The message being checked for an image.
      * @returns Whether or not there is an image attached to the message to reverse image search.
      */
-    public triggered(msg: Message): boolean {
+    public async triggered(msg: Message): Promise<boolean> {
         // console.log(`MESSAGE ${this.count++}:`, msg)
         console.log(`MESSAGE ${this.count++}:`)
 

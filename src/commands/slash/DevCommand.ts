@@ -42,7 +42,7 @@ export class DevCommand extends SlashCommand implements SlashCommand {
         return ["dev"];
     }
 
-    /**
+    /**x
      * This method is used to get the metadata for the command.
      * @returns The metadata of the command.
      */
@@ -71,7 +71,7 @@ export class DevCommand extends SlashCommand implements SlashCommand {
                 // name_localizations: {}
                 value: 'INFO'
             }])
-            // .setAutocomplete(true)
+            .setAutocomplete(true)
         )
 
         // Retun the build slash command metadata
@@ -86,7 +86,13 @@ export class DevCommand extends SlashCommand implements SlashCommand {
      * @returns The autocomplete data for the interaction option or undefined if there is none.
      */
     public async autocomplete(interaction: AutocompleteInteraction, option: AutocompleteFocusedOption): Promise<ApplicationCommandOptionChoiceData[] | undefined> {
-        // WHAT DO :thinking:
+        switch(option.name) {
+            case "info": {
+                // return ["x", "y"]
+            }
+            // case "": {}
+        }
+        // return [{name: "x", value: "y"}];
         return undefined;
     }
 
@@ -96,7 +102,7 @@ export class DevCommand extends SlashCommand implements SlashCommand {
      * @param interaction The command interaction being run.
      * @throws CommandError if the command is found to be unable to run.
      */
-    public checkUsability(interaction: CommandInteraction): void {
+    public async checkUsability(interaction: CommandInteraction): Promise<void> {
         // Throw an error because the user permissions didn't match
         if(this.userIds.indexOf(interaction.user.id) == -1) {
             throw new CommandError("This action can only be done by developers.");
@@ -110,77 +116,77 @@ export class DevCommand extends SlashCommand implements SlashCommand {
      * @param data The data related to the event, passed in from the EventDataService.
      */
     public async executeSlashCommand(client: Client, interaction: ChatInputCommandInteraction, data: EventData): Promise<void> {
-        let command = interaction.options.getString();
+        // let command = interaction.options.getString();
         // {
         //     command: intr.options.getString(
         //         // Lang.getRef('arguments.command', Language.Default)
         //     ) as DevCommandName,
         // };
 
-        switch (command) {
-            case 'INFO': {
-                // let shardCount = intr.client.shard?.count ?? 1;
-                // let serverCount: number;
-                // if (intr.client.shard) {
-                //     try {
-                //         serverCount = await ShardUtils.serverCount(intr.client.shard);
-                //     } catch (error) {
-                //         if (error.name.includes('ShardingInProcess')) {
-                //             await InteractionUtils.send(
-                //                 intr,
-                //                 Lang.getEmbed('errorEmbeds.startupInProcess', data.lang)
-                //             );
-                //             return;
-                //         } else {
-                //             throw error;
-                //         }
-                //     }
-                // } else {
-                //     serverCount = intr.client.guilds.cache.size;
-                // }
+        // switch (command) {
+        //     case 'INFO': {
+        //         // let shardCount = intr.client.shard?.count ?? 1;
+        //         // let serverCount: number;
+        //         // if (intr.client.shard) {
+        //         //     try {
+        //         //         serverCount = await ShardUtils.serverCount(intr.client.shard);
+        //         //     } catch (error) {
+        //         //         if (error.name.includes('ShardingInProcess')) {
+        //         //             await InteractionUtils.send(
+        //         //                 intr,
+        //         //                 Lang.getEmbed('errorEmbeds.startupInProcess', data.lang)
+        //         //             );
+        //         //             return;
+        //         //         } else {
+        //         //             throw error;
+        //         //         }
+        //         //     }
+        //         // } else {
+        //         //     serverCount = intr.client.guilds.cache.size;
+        //         // }
 
-                let memory = process.memoryUsage();
+        //         let memory = process.memoryUsage();
 
-                // await InteractionUtils.send(
-                //     intr,
-                //     Lang.getEmbed('displayEmbeds.devInfo', data.lang, {
-                //         NODE_VERSION: process.version,
-                //         TS_VERSION: `v${typescript.version}`,
-                //         ES_VERSION: TsConfig.compilerOptions.target,
-                //         DJS_VERSION: `v${djs.version}`,
-                //         SHARD_COUNT: shardCount.toLocaleString(data.lang),
-                //         SERVER_COUNT: serverCount.toLocaleString(data.lang),
-                //         SERVER_COUNT_PER_SHARD: Math.round(serverCount / shardCount).toLocaleString(
-                //             data.lang
-                //         ),
-                //         RSS_SIZE: FormatUtils.fileSize(memory.rss),
-                //         RSS_SIZE_PER_SERVER:
-                //             serverCount > 0
-                //                 ? FormatUtils.fileSize(memory.rss / serverCount)
-                //                 : Lang.getRef('other.na', data.lang),
-                //         HEAP_TOTAL_SIZE: FormatUtils.fileSize(memory.heapTotal),
-                //         HEAP_TOTAL_SIZE_PER_SERVER:
-                //             serverCount > 0
-                //                 ? FormatUtils.fileSize(memory.heapTotal / serverCount)
-                //                 : Lang.getRef('other.na', data.lang),
-                //         HEAP_USED_SIZE: FormatUtils.fileSize(memory.heapUsed),
-                //         HEAP_USED_SIZE_PER_SERVER:
-                //             serverCount > 0
-                //                 ? FormatUtils.fileSize(memory.heapUsed / serverCount)
-                //                 : Lang.getRef('other.na', data.lang),
-                //         HOSTNAME: os.hostname(),
-                //         SHARD_ID: (intr.guild?.shardId ?? 0).toString(),
-                //         SERVER_ID: intr.guild?.id ?? Lang.getRef('other.na', data.lang),
-                //         BOT_ID: intr.client.user?.id,
-                //         USER_ID: intr.user.id,
-                //     })
-                // );
-                break;
-            }
-            default: {
-                return;
-            }
-        }
+        //         // await InteractionUtils.send(
+        //         //     intr,
+        //         //     Lang.getEmbed('displayEmbeds.devInfo', data.lang, {
+        //         //         NODE_VERSION: process.version,
+        //         //         TS_VERSION: `v${typescript.version}`,
+        //         //         ES_VERSION: TsConfig.compilerOptions.target,
+        //         //         DJS_VERSION: `v${djs.version}`,
+        //         //         SHARD_COUNT: shardCount.toLocaleString(data.lang),
+        //         //         SERVER_COUNT: serverCount.toLocaleString(data.lang),
+        //         //         SERVER_COUNT_PER_SHARD: Math.round(serverCount / shardCount).toLocaleString(
+        //         //             data.lang
+        //         //         ),
+        //         //         RSS_SIZE: FormatUtils.fileSize(memory.rss),
+        //         //         RSS_SIZE_PER_SERVER:
+        //         //             serverCount > 0
+        //         //                 ? FormatUtils.fileSize(memory.rss / serverCount)
+        //         //                 : Lang.getRef('other.na', data.lang),
+        //         //         HEAP_TOTAL_SIZE: FormatUtils.fileSize(memory.heapTotal),
+        //         //         HEAP_TOTAL_SIZE_PER_SERVER:
+        //         //             serverCount > 0
+        //         //                 ? FormatUtils.fileSize(memory.heapTotal / serverCount)
+        //         //                 : Lang.getRef('other.na', data.lang),
+        //         //         HEAP_USED_SIZE: FormatUtils.fileSize(memory.heapUsed),
+        //         //         HEAP_USED_SIZE_PER_SERVER:
+        //         //             serverCount > 0
+        //         //                 ? FormatUtils.fileSize(memory.heapUsed / serverCount)
+        //         //                 : Lang.getRef('other.na', data.lang),
+        //         //         HOSTNAME: os.hostname(),
+        //         //         SHARD_ID: (intr.guild?.shardId ?? 0).toString(),
+        //         //         SERVER_ID: intr.guild?.id ?? Lang.getRef('other.na', data.lang),
+        //         //         BOT_ID: intr.client.user?.id,
+        //         //         USER_ID: intr.user.id,
+        //         //     })
+        //         // );
+        //         break;
+        //     }
+        //     default: {
+        //         return;
+        //     }
+        // }
     }
 
 }

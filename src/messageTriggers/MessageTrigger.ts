@@ -4,9 +4,10 @@ import { Client, Message } from 'discord.js'
 import { EventData } from '../models/eventData.ts'
 
 /**
- * A Trigger is executed whenever conditions with a specific message are met.
+ * A Trigger is executed whenever conditions with a specific message are met. The conditions to check for are 
+ * established by the triggered() method.
  */
-export interface MsgTrigger {
+export interface MessageTrigger {
 
     /**
      * Return whether or not a the guild the message must have originated from a guild or not.
@@ -18,7 +19,7 @@ export interface MsgTrigger {
      * This is the method used to check the conditions for whether or not the trigger will be executed.
      * @param msg The message causing the trigger.
      */
-    triggered(msg: Message): boolean;
+    triggered(msg: Message): Promise<boolean>;
     
     /**
      * When the trigger conditions are met, this function will be executed.

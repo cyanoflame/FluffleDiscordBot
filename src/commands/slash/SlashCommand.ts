@@ -53,7 +53,7 @@ export abstract class SlashCommand implements Command {
      * @param interaction The command interaction being run.
      * @throws CommandError if the command is found to be unable to run.
      */
-    abstract checkUsability(interaction: CommandInteraction): void;
+    abstract checkUsability(interaction: CommandInteraction): Promise<void>;
 
     /**
      * This function will execute whenever the command is called.

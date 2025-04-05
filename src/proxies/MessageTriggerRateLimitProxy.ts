@@ -1,22 +1,22 @@
-import { RateLimiter } from 'discord.js-rate-limiter'
-import type { MsgTrigger } from '../msgTriggers/MsgTrigger'
+import type { MessageTrigger } from '../messageTriggers/MessageTrigger'
 import type { Client, Message } from 'discord.js'
 import type { EventData } from '../models/eventData'
 import { Logger } from '../services/logger'
+import { RateLimiterMemory } from 'rate-limiter-flexible'
 
 import LogMessageTemplates from "../../lang/logMessageTemplates.json"
 
 /**
  * This class is used to add a rate limiter to a message trigger as a proxy. This keeps the implementation 
- * abstracted from the MsgTrigger object itself while also making it easy to apply.
+ * abstracted from the MessageTrigger object itself while also making it easy to apply.
  */
-export class MsgTriggerRateLimitProxy implements MsgTrigger {
+export class MessageTriggerRateLimitProxy implements MessageTrigger {
 
     /** The rate limiter used for whatever event handler is making use of it */
-    private rateLimiter: RateLimiter
+    private rateLimiter: RateLimiterMemory
 
     /** The reference to the proxied object */
-    private msgTrigger: MsgTrigger
+    private messageTrigger: MessageTrigger
 
     /** The name of the proxy - used to identify it the proxy in logs */
     private proxyName: string
@@ -24,38 +24,58 @@ export class MsgTriggerRateLimitProxy implements MsgTrigger {
     /**
      * Constructs the proxy.
      * @param rateLimiter Either a reference to a rate limiter to use, or an object with the details make a new rate limiter, such that:
-     * rateLimitAmount - The amount of requests that can be made within an interval before limiting the rate ; and rateLimitInterval - The 
-     * time that a the amount of requests can be made in before triggering a rate limit,
+     * rateLimitAmount - The amount of requests that can be made within an interval before limiting the rate ;
+     * rateLimitInterval - The time (in seconds) that a the amount of requests can be made in before triggering a rate limit.
      * @param proxyName The name of the the proxy, used to identify it in logging.
-     * @param msgTrigger The msgTrigger object that is being rate limited.
+     * @param messageTrigger The messageTrigger object that is being rate limited.
      */
-    constructor(rateLimiter: {rateLimitAmount: number, rateLimitInterval: number} | RateLimiter, proxyName: string, msgTrigger: MsgTrigger) {
+    constructor(rateLimiter: {rateLimitAmount: number, rateLimitInterval: number} | RateLimiterMemory, proxyName: string, messageTrigger: MessageTrigger) {
         // if the ratelimiter is predefined, then set that. Otherwise, make a new one
-        if(rateLimiter instanceof RateLimiter) {
+        if(rateLimiter instanceof RateLimiterMemory) {
             // set the rate limiter reference
             this.rateLimiter = rateLimiter
         } else {
             // Create the rate limiter object
-            this.rateLimiter = new RateLimiter(
-                rateLimiter.rateLimitAmount, 
-                rateLimiter.rateLimitInterval, 
-            )
+            this.rateLimiter = new RateLimiterMemory({
+                points: rateLimiter.rateLimitAmount, 
+                duration: rateLimiter.rateLimitInterval
+            })
         }
 
         // Store the reference to the proxied object
-        this.msgTrigger = msgTrigger
+        this.messageTrigger = messageTrigger
 
         // Store the name of the proxy - used for logging
         this.proxyName = proxyName
     }
 
+    // /**
+    //  * Checks whether or not the user is rate limited. Haven't tested/used it yet though.
+    //  * @param userId The user id being checked for being rate limited.
+    //  * @returns whether or not the user is currently rate limited.
+    //  */
+    // public async isRateLimited(userId: string): Promise<boolean> {
+    //     return this.rateLimiter.get(userId).then(rateLimitRes => {
+    //         // User token is not in the list -- is not rate limtied
+    //         if(rateLimitRes == null) {
+    //             return false;
+    //         }
+    //         return rateLimitRes.remainingPoints == 0 && rateLimitRes.msBeforeNext != 0
+    //     })
+    // }
+
     /**
-     * Checks whether or not the user is rate limited.
+     * Increments the rate limit count for the user and returns whether or not a user is rate limited.
      * @param userId The user id being checked for being rate limited.
      * @returns whether or not the user is currently rate limited.
      */
-    public isRateLimited(userId: string): boolean {
-        return this.rateLimiter.take(userId)
+    public async incrementAndCheckRateLimit(userId: string): Promise<boolean> {
+        let result = this.rateLimiter.consume(userId)
+        // is not rate limited
+        .then((rateLimiterRes) => {return false})
+        // is rate limited
+        .catch((rateLimiterRes) => {return true});
+        return result
     }
 
     /**
@@ -63,15 +83,15 @@ export class MsgTriggerRateLimitProxy implements MsgTrigger {
      * @param amount The amount of requests that can be made within an interval before limiting the rate.
      */
     public setRateLimitAmount(amount: number): void {
-        this.rateLimiter.amount = amount
+        this.rateLimiter.points = amount
     }
 
     /**
-     * Used to change the amount of time between requests made.
+     * Used to change the amount of time for timeouts
      * @param interval The time that a the amount of requests can be made in before triggering a rate limit,
      */
     public setRateLimitInterval(interval: number): void {
-        this.rateLimiter.interval = interval
+        this.rateLimiter.duration = interval;
     }
 
     /**
@@ -79,20 +99,20 @@ export class MsgTriggerRateLimitProxy implements MsgTrigger {
      * @returns The response from the concrete object.
      */
     public isGuildRequired(): boolean {
-        return this.msgTrigger.isGuildRequired()
+        return this.messageTrigger.isGuildRequired()
     }
 
     /**
      * This method will perform the check for the rate limit. If it succeeds, then it will
      * @param msg The message causing the trigger.
      */
-    public triggered(msg: Message): boolean {
+    public async triggered(msg: Message):Promise<boolean> {
         // Check if the trigger condition has been met FIRST, before checking the rate limit
         // that way, the rate limit is NOT hit by random messages
-        let isTriggered = this.msgTrigger.triggered(msg)
+        let isTriggered = await this.messageTrigger.triggered(msg)
         if(isTriggered) {
             // if the trigger is valid, then check for the rate limit
-            if(this.isRateLimited(msg.author.id)) {
+            if(await this.incrementAndCheckRateLimit(msg.author.id)) {
                 // log the rate limit hit
                 Logger.error(LogMessageTemplates.error.userMessageRateLimit
                     .replaceAll('{USER_TAG}', msg.author.tag)
@@ -114,7 +134,7 @@ export class MsgTriggerRateLimitProxy implements MsgTrigger {
      * @param data The data related to the event, passed in from the EventDataService.
      */
     public async execute(client: Client, msg: Message, data: EventData): Promise<void> {
-        await this.msgTrigger.execute(client, msg, data)
+        await this.messageTrigger.execute(client, msg, data)
     }
 
 }

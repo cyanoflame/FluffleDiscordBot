@@ -31,7 +31,7 @@ import type {
 import { Logger } from "../services/logger"
 
 import { PartialUtils } from "../utils/partialUtils"
-import type { MsgTrigger } from "../msgTriggers/MsgTrigger"
+import type { MessageTrigger } from "../messageTriggers/MessageTrigger"
 import type { EventDataService } from "../services/eventDataService"
 import { CommandDeferType, type Command } from "../commands/Command"
 import type { SlashCommand } from "../commands/slash/SlashCommand"
@@ -56,7 +56,7 @@ class DiscordBot {
     private token: string;
 
     /** The current list of active message triggers */
-    private msgTriggers: MsgTrigger[];
+    private messageTriggers: MessageTrigger[];
 
     /** This is where the commands used by the bot are stored */
     private commands: CommandStore;
@@ -92,7 +92,7 @@ class DiscordBot {
         this.token = token
 
         // Create the message trigger map
-        this.msgTriggers = []
+        this.messageTriggers = []
 
         // Create the command storage
         this.commands = new CommandStore();
@@ -188,46 +188,46 @@ class DiscordBot {
     // }
 
     /**
-     * This method is used to add a MsgTrigger to the bot for it to use.
-     * @param msgTrigger The msgTrigger that will be added to the bot to be used.
-     * @returns the command index in the msgTrigger array, which could be used to remove it.
+     * This method is used to add a MessageTrigger to the bot for it to use.
+     * @param messageTrigger The messageTrigger that will be added to the bot to be used.
+     * @returns the command index in the messageTrigger array, which could be used to remove it.
      */
-    public addMsgTrigger(msgTrigger: MsgTrigger): number {
+    public addMessageTrigger(messageTrigger: MessageTrigger): number {
         // Add to the array
-        this.msgTriggers.push(msgTrigger)
+        this.messageTriggers.push(messageTrigger)
         // Return the index it was inserted at
-        return this.msgTriggers.length - 1
+        return this.messageTriggers.length - 1
     }
 
     /**
-     * This method is used to remove a MsgTrigger specified by its index in the array. Removing it will make the bot
+     * This method is used to remove a MessageTrigger specified by its index in the array. Removing it will make the bot
      * no longer check for/use it.
-     * @param index The index of the msgTrigger being removed from the array storing them. This was returned when 
+     * @param index The index of the messageTrigger being removed from the array storing them. This was returned when 
      * it was added. Otherwise, you can remove it by referencing the object itself.
      * @returns whether or not it was removed successfully or not. It will return false if the index is out of bounds.
      */
-    public removeMsgTriggerIndex(index: number): boolean {
-        if(this.msgTriggers[index] != undefined) {
-            this.msgTriggers = this.msgTriggers.splice(index, 1)
+    public removeMessageTriggerIndex(index: number): boolean {
+        if(this.messageTriggers[index] != undefined) {
+            this.messageTriggers = this.messageTriggers.splice(index, 1)
             return true
         }
         return false
     }
 
     /**
-     * This method is used to remove a MsgTrigger specified by the object itself. Removing it will make the bot
+     * This method is used to remove a MessageTrigger specified by the object itself. Removing it will make the bot
      * no longer check for/use it.
-     * @param msgTrigger The message trigger object itself that's being removed from the array storing them.
+     * @param messageTrigger The message trigger object itself that's being removed from the array storing them.
      * @returns @returns whether or not it was removed successfully or not. It will return false if it did not exist in the array.
      */
-    public removeMsgTrigger(msgTrigger: MsgTrigger): boolean {
+    public removeMessageTrigger(messageTrigger: MessageTrigger): boolean {
         // Get the index of it
-        let index = this.msgTriggers.indexOf(msgTrigger)
-        return this.removeMsgTriggerIndex(index)
+        let index = this.messageTriggers.indexOf(messageTrigger)
+        return this.removeMessageTriggerIndex(index)
     }
 
     /**
-     * This is the method that's called when a message is checked by the bot. It will check all of the MsgTriggers in the 
+     * This is the method that's called when a message is checked by the bot. It will check all of the MessageTriggers in the 
      * array and run any of them that are active.
      * @param msg The message being checked by the bot.
      */
@@ -244,21 +244,28 @@ class DiscordBot {
                 return
             }
 
-            // Find the msgTriggers that are current active
-            let activeMsgTrigger = this.msgTriggers.filter(msgTrigger => {
-                if (msgTrigger.isGuildRequired() && !msg.guild) {
-                    return false
-                }
-    
-                if (!msgTrigger.triggered(msg)) {
-                    return false
-                }
+            // Find the messageTriggers that are current active
+            // let activeMessageTrigger = this.messageTriggers.filter(messageTrigger => {
+            //     if (messageTrigger.isGuildRequired() && !msg.guild) {
+            //         return false
+            //     }
 
-                return true
-            })
+            //     return messageTrigger.triggered(msg)
+            // })
+            let activeMessageTriggers: MessageTrigger[] = []
+            for(const messageTrigger of this.messageTriggers) {
+                // if message requires a guild and there isn' tone
+                if (messageTrigger.isGuildRequired() && !msg.guild) {
+                    continue;
+                }
+                // check which message triggers are active
+                if(await messageTrigger.triggered(msg)) {
+                    activeMessageTriggers.push(messageTrigger);
+                }
+            }
 
             // If this message causes no triggers then return
-            if (activeMsgTrigger.length === 0) {
+            if (activeMessageTriggers.length === 0) {
                 return
             }
 
@@ -270,8 +277,8 @@ class DiscordBot {
             })
 
             // Execute triggers
-            for (let msgTrigger of activeMsgTrigger) {
-                await msgTrigger.execute(this.client, msg, data);
+            for (let messageTrigger of activeMessageTriggers) {
+                await messageTrigger.execute(this.client, msg, data);
             }
         } catch (error) {
             Logger.error(LogMessageTemplates.error.message, error)
@@ -415,9 +422,9 @@ class DiscordBot {
             // Check for permissions (this could be imp0lemented as a proxy class as well if necessary)
             try {
                 // Check whether the command can be used or not
-                command.checkUsability(interaction);
+                await command.checkUsability(interaction);
 
-                // Get the event data
+                // Get the event data -- move this elsewhere
                 let data = await this.eventDataService.create({
                     user: interaction.client.user,
                     channel: interaction.channel ? interaction.channel as Channel : undefined,

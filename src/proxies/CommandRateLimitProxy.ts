@@ -1,4 +1,3 @@
-import { RateLimiter } from 'discord.js-rate-limiter'
 import type { Command, CommandDeferType } from '../commands/Command'
 import type { Client, CommandInteraction, Interaction, Message, RESTPostAPIChatInputApplicationCommandsJSONBody } from 'discord.js'
 import type { EventData } from '../models/eventData'
@@ -6,6 +5,7 @@ import { Logger } from '../services/logger'
 
 import LogMessageTemplates from "../../lang/logMessageTemplates.json"
 import { CommandError } from '../commands/CommandError'
+import { RateLimiterMemory } from 'rate-limiter-flexible'
 
 /**
  * This class is used to add a rate limiter to a command as a proxy. This keeps the implementation 
@@ -14,7 +14,7 @@ import { CommandError } from '../commands/CommandError'
 export class CommandRateLimitProxy implements Command {
 
     /** The rate limiter used for whatever event handler is making use of it */
-    private rateLimiter: RateLimiter
+    private rateLimiter: RateLimiterMemory
 
     /** The reference to the proxied object */
     private command: Command
@@ -30,17 +30,17 @@ export class CommandRateLimitProxy implements Command {
      * @param proxyName The name of the the proxy, used to identify it in logging.
      * @param command The command object that is being rate limited.
      */
-    constructor(rateLimiter: {rateLimitAmount: number, rateLimitInterval: number} | RateLimiter, proxyName: string, command: Command) {
+    constructor(rateLimiter: {rateLimitAmount: number, rateLimitInterval: number} | RateLimiterMemory, proxyName: string, command: Command) {
         // if the ratelimiter is predefined, then set that. Otherwise, make a new one
-        if(rateLimiter instanceof RateLimiter) {
+        if(rateLimiter instanceof RateLimiterMemory) {
             // set the rate limiter reference
             this.rateLimiter = rateLimiter
         } else {
             // Create the rate limiter object
-            this.rateLimiter = new RateLimiter(
-                rateLimiter.rateLimitAmount, 
-                rateLimiter.rateLimitInterval, 
-            )
+            this.rateLimiter = new RateLimiterMemory({
+                points: rateLimiter.rateLimitAmount, 
+                duration: rateLimiter.rateLimitInterval
+            })
         }
 
         // Store the reference to the proxied object
@@ -50,13 +50,33 @@ export class CommandRateLimitProxy implements Command {
         this.proxyName = proxyName
     }
 
+    // /**
+    //  * Checks whether or not the user is rate limited. Haven't tested/used it yet though.
+    //  * @param userId The user id being checked for being rate limited.
+    //  * @returns whether or not the user is currently rate limited.
+    //  */
+    // public async isRateLimited(userId: string): Promise<boolean> {
+    //     return this.rateLimiter.get(userId).then(rateLimitRes => {
+    //         // User token is not in the list -- is not rate limtied
+    //         if(rateLimitRes == null) {
+    //             return false;
+    //         }
+    //         return rateLimitRes.remainingPoints == 0 && rateLimitRes.msBeforeNext != 0
+    //     })
+    // }
+
     /**
-     * Checks whether or not the user is rate limited.
+     * Increments the rate limit count for the user and returns whether or not a user is rate limited.
      * @param userId The user id being checked for being rate limited.
      * @returns whether or not the user is currently rate limited.
      */
-    public isRateLimited(userId: string): boolean {
-        return this.rateLimiter.take(userId)
+    public async incrementAndCheckRateLimit(userId: string): Promise<boolean> {
+        let result = this.rateLimiter.consume(userId)
+        // is not rate limited
+        .then((rateLimiterRes) => {return false})
+        // is rate limited
+        .catch((rateLimiterRes) => {return true});
+        return result
     }
 
     /**
@@ -64,15 +84,15 @@ export class CommandRateLimitProxy implements Command {
      * @param amount The amount of requests that can be made within an interval before limiting the rate.
      */
     public setRateLimitAmount(amount: number): void {
-        this.rateLimiter.amount = amount
+        this.rateLimiter.points = amount
     }
 
     /**
-     * Used to change the amount of time between requests made.
+     * Used to change the amount of time for timeouts
      * @param interval The time that a the amount of requests can be made in before triggering a rate limit,
      */
     public setRateLimitInterval(interval: number): void {
-        this.rateLimiter.interval = interval
+        this.rateLimiter.duration = interval;
     }
 
     /**
@@ -108,12 +128,12 @@ export class CommandRateLimitProxy implements Command {
      * This method will perform the check for the rate limit. If it succeeds, then it will
      * @param msg The message causing the trigger.
      */
-    public checkUsability(interaction: CommandInteraction): void {
+    public async checkUsability(interaction: CommandInteraction): Promise<void> {
         // Check before if there's anything else stopping it from running
         this.command.checkUsability(interaction);
 
         // if the trigger is valid, then check for the rate limit
-        if(this.isRateLimited(interaction.client.user.id)) {
+        if(await this.incrementAndCheckRateLimit(interaction.client.user.id)) {
             // log the rate limit hit
             Logger.error(LogMessageTemplates.error.userCommandRateLimit
                 .replaceAll('{USER_TAG}', interaction.client.user.tag)
@@ -125,7 +145,7 @@ export class CommandRateLimitProxy implements Command {
             // Throw an error because the user permissions didn't match
             throw new CommandError(
                 // TODO: Language support for this
-                `You can only run this command ${this.rateLimiter.amount} time(s) every ${this.rateLimiter.interval + "ms"}. Please wait before attempting this command again.`
+                `You can only run this command ${this.rateLimiter.points} time(s) every ${this.rateLimiter.duration} second(s). Please wait before attempting this command again.`
             )
         }
     }

@@ -42,7 +42,7 @@ export interface Command {
      * @param interaction The command interaction being run.
      * @throws CommandError if the command is found to be unable to run.
      */
-    checkUsability(interaction: CommandInteraction): void;
+    checkUsability(interaction: CommandInteraction): Promise<void>;
 
     /**
      * This function will execute whenever the command is called.

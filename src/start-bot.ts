@@ -5,8 +5,8 @@ import type { GatewayIntentsString } from "discord.js"
 import config from '../config/config.json'
 import { DiscordBot } from "./models/DiscordBot"
 import { EventDataService } from "./services/eventDataService"
-import { OnImageMsgTrigger } from "./msgTriggers/OnImageMsgTrigger"
-import { MsgTriggerRateLimitProxy } from "./proxies/MsgTriggerRateLimitProxy"
+import { OnImageMessageTrigger } from "./messageTriggers/OnImageMessageTrigger"
+import { MessageTriggerRateLimitProxy } from "./proxies/MessageTriggerRateLimitProxy"
 import { Logger } from "./services/logger"
 import LogMessageTemplates from "../lang/logMessageTemplates.json"
 
@@ -55,15 +55,15 @@ async function start(): Promise<void> {
     
     // Create any services used by the events/handlers
 
-    // Add any message triggers / MsgTriggers to the bot
-    // bot.addMsgTrigger(new OnImageMsgTrigger(bot.getClient())) // No RateLimit proxy
-    bot.addMsgTrigger(new MsgTriggerRateLimitProxy(
+    // Add any message triggers / MessageTriggers to the bot
+    // bot.addMessageTrigger(new OnImageMessageTrigger(bot.getClient())) // No RateLimit proxy
+    bot.addMessageTrigger(new MessageTriggerRateLimitProxy(
         {
             rateLimitAmount: config.rateLimiting.triggers.amount, 
             rateLimitInterval: config.rateLimiting.triggers.interval * 1000
         }, 
-        "OnImageMsgTrigger", 
-        new OnImageMsgTrigger()
+        "OnImageMessageTrigger", 
+        new OnImageMessageTrigger()
     )) // With RateLimit Proxy
 
     // Start the bot
