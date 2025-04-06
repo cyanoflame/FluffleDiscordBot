@@ -51,14 +51,8 @@ async function start(): Promise<void> {
     // Get the bot instance
     let bot = await defineBot();
 
-    // // Define the local commands here
-    // let localCommands: {[command: string]: RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody}[] = [
-    //     // ChatCommandMetadata,
-    //     // MessageCommandMetadata,
-    //     // ...
-    // ];
-
-    let localCommandMetadata = bot.getAlllCommandMetadata();
+    // Get the commands local to the bot
+    let localCommandMetadata = bot.getAllCommandMetadata();
 
     // Create the manager
     let manager = new CommandManager(process.env.BOT_TOKEN!, process.env.BOT_ID!, localCommandMetadata)
@@ -67,7 +61,8 @@ async function start(): Promise<void> {
     let command: CommandManagerFunction | undefined = undefined;
 
     // Select the right command
-    switch (toCommandOperation(process.argv[3])) {
+    const operation = toCommandOperation(process.argv[2]);
+    switch (operation) {
         case CommandOperation.VIEW: {
             command = new ViewFunction(await manager.getLocalCommandsOnRemote(), await manager.getLocalCommandsOnly(), await manager.getRemoteCommandsOnly());
             break;
@@ -77,8 +72,8 @@ async function start(): Promise<void> {
             break;
         }
         case CommandOperation.RENAME: {
-            let oldName = process.argv[4];
-            let newName = process.argv[5];
+            let oldName = process.argv[3];
+            let newName = process.argv[4];
             if (!(oldName && newName)) {
                 Logger.error(LogMessageTemplates.error.commandActionRenameMissingArg);
                 break;
@@ -87,7 +82,7 @@ async function start(): Promise<void> {
             break;
         }
         case CommandOperation.DELETE: {
-            let commandName = process.argv[4]
+            let commandName = process.argv[3]
             if (!commandName) {
                 Logger.error(LogMessageTemplates.error.commandActionDeleteMissingArg);
                 break;
@@ -97,6 +92,10 @@ async function start(): Promise<void> {
         }
         case CommandOperation.CLEAR: {
             command = new ClearFunction(await manager.getRemoteCommands());
+            break;
+        }
+        default: {
+            console.error("Invalid command manager option entered:", operation); // TODO: Add language options -- improve logging
             break;
         }
     }

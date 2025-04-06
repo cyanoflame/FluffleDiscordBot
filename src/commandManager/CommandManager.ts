@@ -18,9 +18,6 @@ export class CommandManager {
     /** This holds all of the local commands */
     private localCommandsMetadata: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[]
 
-    // /** This is a sorted list of the command arguments for all commands managed by the command manager. */
-    // private sortedlocalCommandArguments: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[]
-
     /** These are the remote commands -- they are undefined until they are retrieved */
     private remoteCommands: RESTGetAPIApplicationCommandsResult | undefined
 
@@ -56,7 +53,7 @@ export class CommandManager {
     public async getRemoteCommands(): Promise<RESTGetAPIApplicationCommandsResult> {
         if (this.remoteCommands == undefined) {
             this.remoteCommands = (await this.rest.get(
-                Routes.applicationCommands(this.botToken)
+                Routes.applicationCommands(this.botClientId)
             )) as RESTGetAPIApplicationCommandsResult;
         }
         return this.remoteCommands

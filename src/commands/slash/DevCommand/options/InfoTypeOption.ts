@@ -22,7 +22,8 @@ export class InfoTypeOption extends AutocompletableOption<SlashCommandStringOpti
      */
     public getOptionData(): SlashCommandStringOption {
         let optionData = new SlashCommandStringOption()
-            .setName("infoType") //Lang.getRef('arguments.command', Language.Default)
+            // Note: name MUST be all lowercase letters
+            .setName("infotype") //Lang.getRef('arguments.command', Language.Default)
             // .setName_localizations() //Lang.getRefLocalizationMap('arguments.command')
             .setDescription("Get the specific type of information") //Lang.getRef('argDescs.devCommand', Language.Default)
             // .setDescriptionLocalizations() // Lang.getRefLocalizationMap('argDescs.devCommand')

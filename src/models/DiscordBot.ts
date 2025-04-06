@@ -350,7 +350,7 @@ class DiscordBot {
      * Returns all the metadata of all the commands used by the bot.
      * @returns The combined metadata of every command used by the bot.
      */
-    public getAlllCommandMetadata(): RESTPostAPIChatInputApplicationCommandsJSONBody[] {
+    public getAllCommandMetadata(): RESTPostAPIChatInputApplicationCommandsJSONBody[] {
         return this.commands.getAllCommandMetadata();
     }
 
