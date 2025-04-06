@@ -16,19 +16,19 @@ export class CommandManager {
     private botToken: string;
 
     /** This holds all of the local commands */
-    private localCommands: {[command: string]: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)}[]
+    private localCommandsMetadata: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[]
 
-    /** This is a sorted list of the command arguments for all commands managed by the command manager. */
-    private sortedlocalCommandArguments: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[]
+    // /** This is a sorted list of the command arguments for all commands managed by the command manager. */
+    // private sortedlocalCommandArguments: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[]
 
     /** These are the remote commands -- they are undefined until they are retrieved */
     private remoteCommands: RESTGetAPIApplicationCommandsResult | undefined
 
     // /** List of all of the local commands that already have been uploaded to the bot */
-    // private localCommandsOnRemote: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[]
+    // private localCommandsMetadataOnRemote: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[]
 
     // /** List of all the local commands that do NOT exist/have been uploaded to the bot */
-    // private localCommandsOnly: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[]
+    // private localCommandsMetadataOnly: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[]
 
     // /** List of all the commands that ONLY exist/have been uploaded to the bot */
     // private remoteCommandsOnly: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[]
@@ -37,19 +37,16 @@ export class CommandManager {
      * This is used to create Command Manager object to run the commands
      */
     constructor(botToken: string, botClientId: string,
-        localCommands: {[command: string]: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)}[],
+        localCommandsMetadata: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[],
     ) {
         this.botToken = botToken;
         this.botClientId = botClientId
         this.rest = new REST({ version: '10' }).setToken(botToken);
-        this.localCommands = localCommands;
+        // Sort all command metadata alphabetically by comamnd name
+        this.localCommandsMetadata = localCommandsMetadata.sort((a, b) => (a.name > b.name ? 1 : -1));
 
         // Will need to be found manually later
         this.remoteCommands = undefined;
-
-        // Sort all command metadata alphabetically for each command
-        this.sortedlocalCommandArguments = []
-        this.localCommands.forEach((cmdArgs) => Object.values(cmdArgs).sort((a, b) => (a.name > b.name ? 1 : -1)).forEach(sortedArg => this.sortedlocalCommandArguments.push(sortedArg)))
     }
 
     /**
@@ -71,7 +68,7 @@ export class CommandManager {
      */
     public async getLocalCommandsOnRemote(): Promise<(RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[]> {
         let retrievedRemoteCommands = (await this.getRemoteCommands())
-        return this.sortedlocalCommandArguments.filter(localCommand =>
+        return this.localCommandsMetadata.filter(localCommand =>
             retrievedRemoteCommands.some(remoteCommand => remoteCommand.name === localCommand.name)
         );
     }
@@ -82,7 +79,7 @@ export class CommandManager {
      */
     public async getLocalCommandsOnly(): Promise<(RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[]> {
         let retrievedRemoteCommands = (await this.getRemoteCommands())
-        return this.sortedlocalCommandArguments.filter(
+        return this.localCommandsMetadata.filter(
             localCommand => !retrievedRemoteCommands.some(remoteCommand => remoteCommand.name === localCommand.name)
         );
     }
@@ -93,7 +90,7 @@ export class CommandManager {
      */
     public async getRemoteCommandsOnly(): Promise<APIApplicationCommand[]> {
         return (await this.getRemoteCommands()).filter(
-            remoteCommand => !this.sortedlocalCommandArguments.some(localCommand => localCommand.name === remoteCommand.name)
+            remoteCommand => !this.localCommandsMetadata.some(localCommand => localCommand.name === remoteCommand.name)
         );
     }
 

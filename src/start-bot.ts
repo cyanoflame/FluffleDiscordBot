@@ -9,72 +9,30 @@ import { OnImageMessageTrigger } from "./messageTriggers/OnImageMessageTrigger"
 import { MessageTriggerRateLimitProxy } from "./proxies/MessageTriggerRateLimitProxy"
 import { Logger } from "./services/logger"
 import LogMessageTemplates from "../lang/logMessageTemplates.json"
+import { CommandRateLimitProxy } from "./proxies/CommandRateLimitProxy"
+import { CommandPermissionProxy } from "./proxies/CommandPermissionProxy"
+import { DevCommand } from "./commands/slash/DevCommand/DevCommand"
+import { defineBot } from "./define-bot"
 
 console.log("Starting Bot Instance")
 
 /**
- * This is the main file that runs the a bot.
+ * This is the main file that actuallt starts a bot instance.
  */
 async function start(): Promise<void> {
-    // TEMPORARY
-    let eventDataService = new EventDataService();
-
-    // Event handlers -- there are listeners made for these in the bot
-    // let guildJoinHandler = new GuildJoinHandler(eventDataService)
-    // let guildLeaveHandler = new GuildLeaveHandler()
-    // let commandHandler = new CommandHandler(commands, eventDataService)
-    // let buttonHandler = new ButtonHandler(buttons, eventDataService)
-    // let reactionHandler = new ReactionHandler(reactions, eventDataService)
-
-    // console.log("TEST:", (config.client.partials as string[]).map(partial => Partials[partial as keyof typeof Partials]), (config.client.partials as string[]).map(partial => Partials[partial]))
-    
-    // Create the discord bot
-    let bot = new DiscordBot(
-        {
-            intents: config.client.intents as GatewayIntentsString[],
-            partials: (config.client.partials as string[]).map(partial => Partials[partial as keyof typeof Partials]),
-            makeCache: Options.cacheWithLimits({
-                // Use default caching behavior
-                ...Options.DefaultMakeCacheSettings,
-                // Add caching options from config file
-                ...config.client.caches
-            }),
-            // Used to remove old items from a cache
-            sweepers: undefined
-        },
-        process.env.BOT_TOKEN!,
-        // guildJoinHandler,
-        // guildLeaveHandler,
-        // commandHandler,
-        // buttonHandler,
-        // reactionHandler,
-        // new JobService(jobs)
-
-        eventDataService // TEMPORARY
-    )
-    
-    // Create any services used by the events/handlers
-
-    // Add any message triggers / MessageTriggers to the bot
-    // bot.addMessageTrigger(new OnImageMessageTrigger(bot.getClient())) // No RateLimit proxy
-    bot.addMessageTrigger(new MessageTriggerRateLimitProxy(
-        {
-            rateLimitAmount: config.rateLimiting.triggers.amount, 
-            rateLimitInterval: config.rateLimiting.triggers.interval * 1000
-        }, 
-        "OnImageMessageTrigger", 
-        new OnImageMessageTrigger()
-    )) // With RateLimit Proxy
+    // Create the bot
+    let bot = await defineBot();
 
     // Start the bot
     await bot.start()
 }
 
+// Handles any unhandled rejections from running the bot - recording them to the log
 process.on('unhandledRejection', (reason, _promise) => {
     Logger.error(LogMessageTemplates.error.unhandledRejection, reason);
 });
 
-
+// Starts the bot program
 start().catch(error => {
     Logger.error(LogMessageTemplates.error.unspecified, error);
 })

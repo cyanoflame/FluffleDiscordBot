@@ -26,6 +26,7 @@ import type {
     PartialMessageReaction,
     PartialUser,
     RateLimitData,
+    RESTPostAPIChatInputApplicationCommandsJSONBody,
 } from "discord.js"
 
 import { Logger } from "../services/logger"
@@ -346,6 +347,14 @@ class DiscordBot {
     }
 
     /**
+     * Returns all the metadata of all the commands used by the bot.
+     * @returns The combined metadata of every command used by the bot.
+     */
+    public getAlllCommandMetadata(): RESTPostAPIChatInputApplicationCommandsJSONBody[] {
+        return this.commands.getAllCommandMetadata();
+    }
+
+    /**
      * This is the method that's called when any interaction is checked by the bot. Interactions include commands,
      * autocomplete commands, and button interactions.
      * @param interaction The interaction being checked by the bot.
@@ -383,11 +392,9 @@ class DiscordBot {
         // autocomplete interaction
         if (interaction.isAutocomplete()) {
             try {
-                // Get the potential options for a command to be autocompleted
-                let option = interaction.options.getFocused(true);
                 // Get the choices available for the auto complete options
-                let choices = await (command as SlashCommand).autocomplete(interaction, option);
-                // Respond with the auto complete options if there are any
+                let choices = await (command as SlashCommand).autocomplete(interaction);
+                // Respond with the auto complete options if there are any -- remove any options above the discord limit of 25 per
                 await interaction.respond(choices? choices.slice(0, DiscordLimits.CHOICES_PER_AUTOCOMPLETE) : []);
                 
             } catch (error) {

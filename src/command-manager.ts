@@ -8,6 +8,7 @@ import { RegisterFunction } from "./commandManager/functions/RegisterFunction";
 import { RenameFunction } from "./commandManager/functions/RenameFunction";
 import { DeleteFunction } from "./commandManager/functions/DeleteFunction";
 import { ClearFunction } from "./commandManager/functions/ClearFunction";
+import { defineBot } from "./define-bot";
 
 /**
  * The potential operations that can be done with the command manager.
@@ -47,15 +48,20 @@ function toCommandOperation(argument: string): CommandOperation {
 // Run everything for the command management
 async function start(): Promise<void> {
 
-    // Define the local commands here
-    let localCommands: {[command: string]: RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody}[] = [
-        // ChatCommandMetadata,
-        // MessageCommandMetadata,
-        // ...
-    ];
+    // Get the bot instance
+    let bot = await defineBot();
+
+    // // Define the local commands here
+    // let localCommands: {[command: string]: RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody}[] = [
+    //     // ChatCommandMetadata,
+    //     // MessageCommandMetadata,
+    //     // ...
+    // ];
+
+    let localCommandMetadata = bot.getAlllCommandMetadata();
 
     // Create the manager
-    let manager = new CommandManager(process.env.BOT_TOKEN!, process.env.BOT_ID!, localCommands)
+    let manager = new CommandManager(process.env.BOT_TOKEN!, process.env.BOT_ID!, localCommandMetadata)
 
     // Select the proper command
     let command: CommandManagerFunction | undefined = undefined;
@@ -106,7 +112,7 @@ process.on('unhandledRejection', (reason, _promise) => {
     Logger.error(LogMessageTemplates.error.unhandledRejection, reason);
 });
 
-// Start the system
+// Start the command registration system
 start().catch(error => {
     Logger.error(LogMessageTemplates.error.unspecified, error);
 });

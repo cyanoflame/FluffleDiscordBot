@@ -14,10 +14,10 @@ import { EventData } from '../models/eventData';
 export interface Command {
     
     /**
-     * Returns the names that define the command.
-     * @returns the names that define the command.
+     * Returns the name that defines the command.
+     * @returns the name that defines the command.
      */
-    getNames(): string[];
+    getName(): string;
 
     /** 
      * Discord requires a response from a command in 3 seconds or become invalid. If a 

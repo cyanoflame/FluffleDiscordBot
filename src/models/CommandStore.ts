@@ -1,3 +1,4 @@
+import type { RESTPostAPIChatInputApplicationCommandsJSONBody } from "discord.js";
 import type { Command } from "../commands/Command";
 
 /**
@@ -22,6 +23,15 @@ export class CommandStore {
     }
 
     /**
+     * Returns all the metadata of all the commands in the CommandStore.
+     * @returns The combined metadata of every command in the CommandStore.
+     */
+    public getAllCommandMetadata(): RESTPostAPIChatInputApplicationCommandsJSONBody[] {
+        // Get all the metadata from every command and return it
+        return this.commands.map(command => command.getMetadata());
+    }
+
+    /**
      * Returns the closest matching command based on the command parts given to it.
      * @param commandParts The parts of the command to search for.
      * @returns The exact command if one was found, or the closest match to it. It returns undefined if there
@@ -36,7 +46,8 @@ export class CommandStore {
         // Checks all of the command parts
         for (let [index, commandPart] of commandParts.entries()) {
             // Remove all of the commands not matching
-            found = found.filter(command => command.getNames()[index] === commandPart);
+            // found = found.filter(command => command.getNames()[index] === commandPart);
+            found = found.filter(command => command.getName() === commandPart);
             // if there is nothing matching, return the current closest match
             if (found.length == 0) {
                 return closestMatch;
@@ -45,12 +56,12 @@ export class CommandStore {
             if (found.length == 1) {
                 return found[0];
             }
-            // attempt to find an exact match if there is one
-            let exactMatch = found.find(command => command.getNames().length === index + 1);
-            // if an exact match is found, set the closest match to it
-            if (exactMatch) {
-                closestMatch = exactMatch;
-            }
+            // // attempt to find an exact match if there is one
+            // let exactMatch = found.find(command => command.getNames().length === index + 1);
+            // // if an exact match is found, set the closest match to it
+            // if (exactMatch) {
+            //     closestMatch = exactMatch;
+            // }
         }
         // return the closest match to a function
         return closestMatch;

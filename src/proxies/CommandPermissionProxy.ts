@@ -42,11 +42,11 @@ export class CommandPermissionProxy implements Command {
     // }
 
     /**
-     * Returns the names that define the command.
-     * @returns the names that define the command.
+     * Returns the name that define the command.
+     * @returns the name that define the command.
      */
-    public getNames(): string[] {
-        return this.command.getNames();
+    public getName(): string {
+        return this.command.getName();
     }
 
     /** 
@@ -76,7 +76,7 @@ export class CommandPermissionProxy implements Command {
      * @param interaction The command interaction being run.
      * @throws CommandError with the permissions not met by the user running the command.
      */
-    public checkUsability(interaction: CommandInteraction): void {
+    public async checkUsability(interaction: CommandInteraction): Promise<void> {
         // check for the proper permissions
         if(interaction.channel instanceof GuildChannel || interaction.channel instanceof ThreadChannel) {
             // get user permissions

@@ -96,11 +96,11 @@ export class CommandRateLimitProxy implements Command {
     }
 
     /**
-     * Returns the names that define the command.
+     * Returns the name that define the command.
      * @returns the names that define the command.
      */
-    public getNames(): string[] {
-        return this.command.getNames();
+    public getName(): string {
+        return this.command.getName();
     }
     
     /** 
