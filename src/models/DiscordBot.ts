@@ -393,7 +393,8 @@ class DiscordBot {
         if (interaction.isAutocomplete()) {
             try {
                 // Get the choices available for the auto complete options
-                let choices = await (command as SlashCommand).autocomplete(interaction);
+                let choices = await (command! as SlashCommand).autocomplete(interaction);
+                console.log("CHOICES:", choices)
                 // Respond with the auto complete options if there are any -- remove any options above the discord limit of 25 per
                 await interaction.respond(choices? choices.slice(0, DiscordLimits.CHOICES_PER_AUTOCOMPLETE) : []);
                 

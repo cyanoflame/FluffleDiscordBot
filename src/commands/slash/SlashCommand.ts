@@ -91,19 +91,34 @@ export abstract class SlashCommand implements Command {
     /** This stores the functions to get the autocomplete options */
     private autocompleteParameterMap: Map<string, AutocompletableOption<ApplicationCommandOptionBase>>;
 
+    /** This is the command's metadata -- it's constructed upon object creation */
+    private metadata: RESTPostAPIChatInputApplicationCommandsJSONBody;
+
     /**
      * This function creates the map for the autocomplete parameters/commands.
      */
     constructor() {
+        // Create the map
         this.autocompleteParameterMap = new Map<string, AutocompletableOption<ApplicationCommandOptionBase>>();
+
+        // Construct the metadata object upon creation
+        this.metadata = this.buildMetadata();
     }
 
     /**
      * This method is used to get the full metadata for the command.
-     * TODO: Add support for comamnds/subcommand groups
      * @returns The metadata of the command.
      */
     public getMetadata(): RESTPostAPIChatInputApplicationCommandsJSONBody {
+        return this.metadata;
+    }
+
+    /**
+     * This method is used to build the metadata for the command, and also establish the different options.
+     * TODO: Add support for comamnds/subcommand groups
+     * @returns The metadata of the command.
+     */
+    private buildMetadata(): RESTPostAPIChatInputApplicationCommandsJSONBody {
         // Build the command from each of the defined methods
         let slashCommandData = new SlashCommandBuilder()
             .setName(this.getName())

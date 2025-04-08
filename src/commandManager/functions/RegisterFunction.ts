@@ -62,6 +62,11 @@ export class RegisterFunction extends FormatCommandList implements CommandManage
 
             // Update all of the commands already uplaoded to discord
             for (let localCmd of this.localCommandsOnRemote) {
+                // routes.applicationGuildCommands()
+                // ^^
+                // Guild-based deployment of commands is best suited for development and testing in your own personal server. 
+                // Once you're satisfied that it's ready, deploy the command globally to publish it to all guilds that your bot is in.
+                // TODO: Add test deployment option for commands to a specific serger
                 await rest.post(Routes.applicationCommands(process.env.BOT_ID!), {
                     body: localCmd,
                 });

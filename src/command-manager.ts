@@ -54,6 +54,8 @@ async function start(): Promise<void> {
     // Get the commands local to the bot
     let localCommandMetadata = bot.getAllCommandMetadata();
 
+    // console.log(localCommandMetadata[0].options);
+
     // Create the manager
     let manager = new CommandManager(process.env.BOT_TOKEN!, process.env.BOT_ID!, localCommandMetadata)
 

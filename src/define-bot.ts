@@ -67,19 +67,23 @@ export async function defineBot(): Promise<DiscordBot> {
 
     // Create any commands used by the bot
     bot.addCommand(
-        new CommandRateLimitProxy(
-            {
-                rateLimitAmount: 3,
-                rateLimitInterval: 5
-            },
-            "DevCommandRateLimit",
-            new CommandPermissionProxy(
-                [],
-                new DevCommand([
-                    process.env.DEV_USER_ID ?? "undefined"
-                ])
-            )
-        )
+        new DevCommand([
+            process.env.DEV_USER_ID ?? "undefined"
+        ])
+        // PROBLEM: Since this is proxied, casting this to a SlashCommand doesn't work
+        // new CommandRateLimitProxy(
+        //     {
+        //         rateLimitAmount: 3,
+        //         rateLimitInterval: 5
+        //     },
+        //     "DevCommandRateLimit",
+        //     new CommandPermissionProxy(
+        //         [],
+        //         new DevCommand([
+        //             process.env.DEV_USER_ID ?? "undefined"
+        //         ])
+        //     )
+        // )
     );
 
     return bot;

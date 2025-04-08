@@ -4,6 +4,9 @@ import type { CommandManagerFunction } from "./CommandManagerFunction";
 import { Logger } from "../services/logger";
 import LogMessageTemplates from "../../lang/logMessageTemplates.json"
 
+/**
+ * This stores many functions methods and information for the command management commands to function.
+ */
 export class CommandManager {
 
     /** This is the REST object used to communicate with discord. */

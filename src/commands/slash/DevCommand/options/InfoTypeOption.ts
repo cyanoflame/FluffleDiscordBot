@@ -38,7 +38,7 @@ export class InfoTypeOption extends AutocompletableOption<SlashCommandStringOpti
     // public async getChoices(interaction: AutocompleteInteraction): Promise<APIApplicationCommandOptionChoice[]> {
     public async getChoices(interaction: AutocompleteInteraction): Promise<APIApplicationCommandOptionChoice<DevInfoChoices>[]> {
         const focusedOption = interaction.options.getFocused(true);
-       let choices = [
+        let choices = [
             {name: "All", value: DevInfoChoices.ALL},
             {name: "System", value: DevInfoChoices.SYSTEM},
             {name: "Environment", value: DevInfoChoices.ENVIRONMENT},
