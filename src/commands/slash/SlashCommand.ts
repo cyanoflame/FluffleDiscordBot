@@ -26,6 +26,7 @@ import {
 import { EventData } from '../../models/eventData';
 import type { Command, CommandDeferType } from '../Command';
 import { AutocompletableOption } from './AutocompletableOption';
+import { Logger } from '../../services/logger';
 
 /**
  * This class defines the structure of a basic slash command. Compared to other commands, 
@@ -223,7 +224,46 @@ export abstract class SlashCommand implements Command {
      * @param data The data related to the event, passed in from the EventDataService.
      */
     public async execute(client: Client, interaction: CommandInteraction, data: EventData): Promise<void> {
-        await this.executeSlashCommand(client, interaction as ChatInputCommandInteraction, data);
+        // autocomplete interaction
+        if (interaction.isAutocomplete()) {
+            try {
+                // Get the choices available for the auto complete options
+                let choices = await (command! as SlashCommand).autocomplete(interaction); // PROBLEM WITH PROXIED COMMANDS
+                console.log("CHOICES:", choices)
+                // Respond with the auto complete options if there are any -- remove any options above the discord limit of 25 per
+                await interaction.respond(choices? choices.slice(0, DiscordLimits.CHOICES_PER_AUTOCOMPLETE) : []);
+                
+            } catch (error) {
+                // Catch anyt autocomplete error
+                Logger.error(
+                    interaction.channel instanceof TextChannel ||
+                    interaction.channel instanceof NewsChannel ||
+                    interaction.channel instanceof ThreadChannel
+                        ? LogMessageTemplates.error.autocompleteGuild
+                                .replaceAll('{INTERACTION_ID}', interaction.id)
+                                .replaceAll('{OPTION_NAME}', commandName)
+                                .replaceAll('{COMMAND_NAME}', commandName)
+                                .replaceAll('{USER_TAG}', interaction.user.tag)
+                                .replaceAll('{USER_ID}', interaction.user.id)
+                                .replaceAll('{CHANNEL_NAME}', interaction.channel.name)
+                                .replaceAll('{CHANNEL_ID}', interaction.channel.id)
+                                .replaceAll('{GUILD_NAME}', interaction.guild?.name ?? "UNDEFINED")
+                                .replaceAll('{GUILD_ID}', interaction.guild?.id ?? "UNDEFINED")
+                        : LogMessageTemplates.error.autocompleteOther
+                                .replaceAll('{INTERACTION_ID}', interaction.id)
+                                .replaceAll('{OPTION_NAME}', commandName)
+                                .replaceAll('{COMMAND_NAME}', commandName)
+                                .replaceAll('{USER_TAG}', interaction.user.tag)
+                                .replaceAll('{USER_ID}', interaction.user.id),
+                    error
+                );
+            }
+            return;
+        } else {
+            // execute command normally
+            await this.executeSlashCommand(client, interaction as ChatInputCommandInteraction, data);
+        }
+        
     }
 
     /**

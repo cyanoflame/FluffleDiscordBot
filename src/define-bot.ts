@@ -7,8 +7,6 @@ import { DiscordBot } from "./models/DiscordBot"
 import { EventDataService } from "./services/eventDataService"
 import { OnImageMessageTrigger } from "./messageTriggers/OnImageMessageTrigger"
 import { MessageTriggerRateLimitProxy } from "./proxies/MessageTriggerRateLimitProxy"
-import { CommandRateLimitProxy } from "./proxies/CommandRateLimitProxy"
-import { CommandPermissionProxy } from "./proxies/CommandPermissionProxy"
 import { DevCommand } from "./commands/slash/DevCommand/DevCommand"
 
 /**

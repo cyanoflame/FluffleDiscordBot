@@ -7,15 +7,15 @@ import {
     type RESTPostAPIChatInputApplicationCommandsJSONBody,
 } from 'discord.js';
 
-import { EventData } from '../models/eventData';
-import type { Command, CommandDeferType } from '../commands/Command';
-import { CommandError } from '../commands/CommandError';
+import { EventData } from '../../models/eventData';
+import type { Command, CommandDeferType } from '../../commands/Command';
+import { CommandError } from '../../commands/CommandError';
 
 /**
  * This class serves as a base for a simple command that only checks against permissions to see if it 
  * can run. The permissions should be established in the getRequiredClientPermissions() in the child class.
  */
-export class CommandPermissionProxy implements Command {
+export abstract class CommandPermissionProxy implements Command {
 
     /** The reference to the proxied object */
     private command: Command
