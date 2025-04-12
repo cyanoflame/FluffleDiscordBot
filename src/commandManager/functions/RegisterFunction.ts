@@ -2,7 +2,7 @@ import type { CommandManagerFunction } from "../CommandManagerFunction";
 import { Logger } from "../../services/logger"
 import LogMessageTemplates from "../../../lang/logMessageTemplates.json"
 import { FormatCommandList } from "../CommandManagerFunctionWiithOutput";
-import { REST, Routes, type RESTPostAPIChatInputApplicationCommandsJSONBody, type RESTPostAPIContextMenuApplicationCommandsJSONBody } from "discord.js";
+import { REST, Routes, type RESTPostAPIApplicationCommandsJSONBody } from "discord.js";
 
 /**
  * This function is used to register new functions/upload them to discord for the bot.
@@ -10,18 +10,18 @@ import { REST, Routes, type RESTPostAPIChatInputApplicationCommandsJSONBody, typ
 export class RegisterFunction extends FormatCommandList implements CommandManagerFunction {
 
     /** List of all of the local commands that already have been uploaded to the bot */
-    private localCommandsOnRemote: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[]
+    private localCommandsOnRemote: RESTPostAPIApplicationCommandsJSONBody[]
 
     /** List of all the local commands that do NOT exist/have been uploaded to the bot */
-    private localCommandsOnly: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[]
+    private localCommandsOnly: RESTPostAPIApplicationCommandsJSONBody[]
     
     /**
      * This creates the command object with everything it needs to run.
      * @param localCommandsOnRemote List of all of the local commands that already have been uploaded to the bot.
      * @param localCommandsOnly List of all the local commands that do NOT exist/have been uploaded to the bot.
      */
-    constructor(localCommandsOnRemote: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[],
-        localCommandsOnly: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[]
+    constructor(localCommandsOnRemote: RESTPostAPIApplicationCommandsJSONBody[],
+        localCommandsOnly: RESTPostAPIApplicationCommandsJSONBody[]
     ) {
         super();
         this.localCommandsOnRemote = localCommandsOnRemote;
@@ -67,7 +67,7 @@ export class RegisterFunction extends FormatCommandList implements CommandManage
                 // Guild-based deployment of commands is best suited for development and testing in your own personal server. 
                 // Once you're satisfied that it's ready, deploy the command globally to publish it to all guilds that your bot is in.
                 // TODO: Add test deployment option for commands to a specific serger
-                await rest.post(Routes.applicationCommands(process.env.BOT_ID!), {
+                await rest.put(Routes.applicationCommands(process.env.BOT_ID!), {
                     body: localCmd,
                 });
             }

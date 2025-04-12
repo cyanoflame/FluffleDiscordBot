@@ -1,12 +1,27 @@
-import type { RESTPostAPIChatInputApplicationCommandsJSONBody } from "discord.js";
+import type { RESTPostAPIApplicationCommandsJSONBody } from "discord.js";
 import type { Command } from "../commands/Command";
+import { MessageContextMenuCommand } from "../commands/contextMenu/message/MessageContextMenuCommand";
+import { UserContextMenuCommand } from "../commands/contextMenu/user/UserContextMenuCommand";
+import { SlashCommand } from "../commands/slash/SlashCommand";
 
 /**
- * This class deals with storing and accessing commands.
+ * This class is used as a Facade for dealing with all of the commands used by the bot.
+ * All commands must have their OWN UNIQUE NAMES, regardless of command type.
  */
 export class CommandStore {
-    /** The collection of commands stored */
-    private commands: Command[]
+    /** Command names must be unique -- this is used to enforce that */
+    private commandNamespace: Set<string>;
+
+    // Commands are separated into different arrays to keep different ones separate.
+
+    /** The collection of slash commands stored */
+    private slashCommands: SlashCommand[];
+
+    /** The collection of slash commands stored */
+    private messageContextMenuCommands: MessageContextMenuCommand[];
+
+    /** The collection of slash commands stored */
+    private userContextMenuCommands: UserContextMenuCommand[];
 
     /**
      * This constructor creates the command storage. It could be created with an initial set of 
@@ -14,32 +29,78 @@ export class CommandStore {
      * @param commands A collection of commands to start as part of the storage.
      */
     constructor(commands?: Command[]) {
-        // Start the command store with some commands initially
-        if (commands) {
-            this.commands = commands;
-        } else {
-            this.commands = [];
+        // Create the name set
+        this.commandNamespace = new Set<string>();
+
+        // Create the empty arrays
+        this.slashCommands = [];
+        this.messageContextMenuCommands = [];
+        this.userContextMenuCommands = [];
+
+        // Add all of the commands from the array.
+        if(commands) {
+            commands.forEach(command => {
+                this.addCommand(command);
+            })
         }
+    }
+
+    /**
+     * Attemtps to stores the command for reference. If added successfully, it will return true. If not, 
+     * it will return false. It will fail if there already exists a command with the same name.
+     * @param command The command to add to the collection.
+     * @returns Whether or not the command was added successfully.
+     */
+    public addCommand(command: Command): boolean {
+        // if there already exists a command with the same name
+        if(this.commandNamespace.has(command.getName())) {
+            // do not add it
+            return false;
+        }
+        // Check the command type and add it to the proper collection
+        if(command instanceof SlashCommand) {
+            this.slashCommands.push(command);
+        } else
+        if(command instanceof MessageContextMenuCommand) {
+            this.messageContextMenuCommands.push(command);
+        } else
+        if(command instanceof UserContextMenuCommand) {
+            this.userContextMenuCommands.push(command);
+        } else {
+            // Unknown command type
+            return false;
+        }
+
+        // Add the command name to the namespace
+        this.commandNamespace.add(command.getName());
+
+        // Added successfully
+        return true;
     }
 
     /**
      * Returns all the metadata of all the commands in the CommandStore.
      * @returns The combined metadata of every command in the CommandStore.
      */
-    public getAllCommandMetadata(): RESTPostAPIChatInputApplicationCommandsJSONBody[] {
+    public getAllCommandMetadata(): RESTPostAPIApplicationCommandsJSONBody[] {
         // Get all the metadata from every command and return it
-        return this.commands.map(command => command.getMetadata());
+        return [
+            ...this.slashCommands.map(command => command.getMetadata()),
+            ...this.messageContextMenuCommands.map(command => command.getMetadata()),
+            ...this.userContextMenuCommands.map(command => command.getMetadata()),
+        ]
     }
 
     /**
-     * Returns the closest matching command based on the command parts given to it.
+     * Private helper method used look through a specific set of commands and try and find one that matches.
+     * @param commandCollection The collection of the commands to check for the command.
      * @param commandParts The parts of the command to search for.
      * @returns The exact command if one was found, or the closest match to it. It returns undefined if there
      * are no matches.
      */
-    public findCommand(commandParts: string[]): Command | undefined {
+    private findCommand<T extends Command>(commandCollection: T[], commandParts: string[]): T | undefined {
         // get a duplicating list of commands
-        let found = [...this.commands];
+        let found = [...commandCollection];
         // the command that would be the closest match
         let closestMatch: Command | undefined = undefined;
 
@@ -56,54 +117,123 @@ export class CommandStore {
             if (found.length == 1) {
                 return found[0];
             }
-            // // attempt to find an exact match if there is one
-            // let exactMatch = found.find(command => command.getNames().length === index + 1);
-            // // if an exact match is found, set the closest match to it
-            // if (exactMatch) {
-            //     closestMatch = exactMatch;
-            // }
         }
         // return the closest match to a function
         return closestMatch;
     }
 
     /**
-     * This method is used to add a Command to the bot for it to use.
-     * @param command The command that will be added to the bot to be used.
-     * @returns The index of the command in the command collection, which could be used to remove it.
+     * Returns the closest matching slash command based on the command parts given to it.
+     * @param commandCollection The collection of the commands to check for the command.
+     * @param commandParts The parts of the command to search for.
+     * @returns The closest matching slash command or undefined if there is none.
      */
-    public addCommand(command: Command): number {
-        // Add to the array
-        this.commands.push(command);
-        // Return the index it was inserted at
-        return this.commands.length - 1;
+    public findSlashCommand(commandParts: string[]): SlashCommand | undefined {
+        return this.findCommand<SlashCommand>(this.slashCommands, commandParts);
     }
 
     /**
-     * This method is used to remove a Command specified by its index in the array. Removing it will make the bot
-     * no longer check for/use it.
-     * @param index The index of the command being removed from the command collection storing them. This was returned when 
-     * it was added. Otherwise, you can remove it by referencing the object itself.
-     * @returns Whether or not it was removed successfully or not. It will return false if the index is out of bounds.
+     * Returns the closest matching message context menu command based on the command parts given to it.
+     * @param commandCollection The collection of the commands to check for the command.
+     * @param commandParts The parts of the command to search for.
+     * @returns The closest matching slash command or undefined if there is none.
      */
-    public removeCommandIndex(index: number): boolean {
-        if(this.commands[index] != undefined) {
-            this.commands = this.commands.splice(index, 1);
-            return true;
+    public findMessageContextMenuCommand(commandParts: string[]): MessageContextMenuCommand | undefined {
+        return this.findCommand<MessageContextMenuCommand>(this.messageContextMenuCommands, commandParts);
+    }
+
+    /**
+     * Returns the closest matching user context menu command based on the command parts given to it.
+     * @param commandCollection The collection of the commands to check for the command.
+     * @param commandParts The parts of the command to search for.
+     * @returns The closest matching slash command or undefined if there is none.
+     */
+    public findUserContextMenuCommand(commandParts: string[]): UserContextMenuCommand | undefined {
+        return this.findCommand<UserContextMenuCommand>(this.userContextMenuCommands, commandParts);
+    }
+
+    // There's probably some better way of doing this (below here) than copy/pasting 3 times...
+    // Lack of pass by reference makes it janky though
+
+    /**
+     * Private helper method used to remove SlashCommands from the collection.
+     * @param name The name of the command being removed.
+     * @returns Whether or not the command was removed or not
+     */
+    private removeSlashCommand(name: string): boolean {
+        for(let i = 0; i < this.slashCommands.length; i++) {
+            if(this.slashCommands[i].getName() == name) {
+                this.slashCommands = this.slashCommands.splice(i, 1);
+                return true;
+            }
         }
-        return false
+        return false;
     }
 
     /**
-     * This method is used to remove a Command specified by the object itself. Removing it will make the bot
+     * Private helper method used to remove MessageContextMenuCommands from the collection.
+     * @param name The name of the command being removed.
+     * @returns Whether or not the command was removed or not
+     */
+    private removeMessageContextMenuCommand(name: string): boolean {
+        for(let i = 0; i < this.messageContextMenuCommands.length; i++) {
+            if(this.messageContextMenuCommands[i].getName() == name) {
+                this.messageContextMenuCommands = this.messageContextMenuCommands.splice(i, 1);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Private helper method used to remove UserContextMenuCommands from the collection.
+     * @param name The name of the command being removed.
+     * @returns Whether or not the command was removed or not
+     */
+    private removeUserContextMenuCommand(name: string): boolean {
+        for(let i = 0; i < this.userContextMenuCommands.length; i++) {
+            if(this.userContextMenuCommands[i].getName() == name) {
+                this.userContextMenuCommands = this.userContextMenuCommands.splice(i, 1);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * This method is used to remove a Command specified by the command's name. Removing it will make the bot
      * no longer check for/use it.
-     * @param command The command object itself that's being removed from the array storing them.
-     * @returns @returns Whether or not it was removed successfully or not. It will return false if it did not exist in the array.
+     * @param name The name of the command being removed from the collection.
+     * @returns Whether or not it was removed successfully or not.
+     */
+    public removeCommandByName(name: string): boolean {
+        // There's probably some better way of doing this...
+        if(this.commandNamespace.has(name)) {
+            // remove the name from the namespace
+            this.commandNamespace.delete(name);
+            // remove the command from the collection
+            if(this.removeSlashCommand(name)) {
+                return true;
+            } else 
+            if(this.removeMessageContextMenuCommand(name)) {
+                return true;
+            } else {
+                return this.removeUserContextMenuCommand(name);
+            }
+        }
+        // nothing to remove
+        return false;
+    }
+
+    /**
+     * This method is used to remove a Command by referencing the command itself. Removing it will make the bot
+     * no longer check for/use it.
+     * @param command The command that's being removed from the collection.
+     * @returns @returns Whether or not it was removed successfully or not.
      */
     public removeCommand(command: Command): boolean {
-        // Get the index of it
-        let index = this.commands.indexOf(command);
-        return this.removeCommandIndex(index);
+        // Get the command name to remove it
+        return this.removeCommandByName(command.getName());
     }
     
 }

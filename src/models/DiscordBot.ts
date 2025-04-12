@@ -26,6 +26,7 @@ import type {
     PartialMessageReaction,
     PartialUser,
     RateLimitData,
+    RESTPostAPIApplicationCommandsJSONBody,
     RESTPostAPIChatInputApplicationCommandsJSONBody,
 } from "discord.js"
 
@@ -317,30 +318,30 @@ class DiscordBot {
     }
 
     /**
-     * This method is used to add a Command to the bot for it to use.
-     * @param command The command that will be added to the bot to be used.
-     * @returns The index of the command in the command collection, which could be used to remove it.
+     * Attemtps to stores the command for reference. If added successfully, it will return true. If not, 
+     * it will return false. It will fail if there already exists a command with the same name.
+     * @param command The command to add to the collection.
+     * @returns Whether or not the command was added successfully.
      */
-    public addCommand(command: Command): number {
+    public addCommand(command: Command): boolean {
         return this.commands.addCommand(command);
     }
 
     /**
-     * This method is used to remove a Command specified by its index in the array. Removing it will make the bot
+     * This method is used to remove a Command specified by the command's name. Removing it will make the bot
      * no longer check for/use it.
-     * @param index The index of the command being removed from the command collection storing them. This was returned when 
-     * it was added. Otherwise, you can remove it by referencing the object itself.
-     * @returns Whether or not it was removed successfully or not. It will return false if the index is out of bounds.
+     * @param name The name of the command being removed from the collection.
+     * @returns Whether or not it was removed successfully or not.
      */
-    public removeCommandIndex(index: number): boolean {
-        return this.commands.removeCommandIndex(index);
+    public removeCommandName(name: string): boolean {
+        return this.commands.removeCommandByName(name);
     }
 
     /**
-     * This method is used to remove a Command specified by the object itself. Removing it will make the bot
+     * This method is used to remove a Command by referencing the command itself. Removing it will make the bot
      * no longer check for/use it.
-     * @param command The command object itself that's being removed from the array storing them.
-     * @returns @returns Whether or not it was removed successfully or not. It will return false if it did not exist in the array.
+     * @param command The command that's being removed from the collection.
+     * @returns @returns Whether or not it was removed successfully or not.
      */
     public removeCommand(command: Command): boolean {
         return this.commands.removeCommand(command);
@@ -350,7 +351,7 @@ class DiscordBot {
      * Returns all the metadata of all the commands used by the bot.
      * @returns The combined metadata of every command used by the bot.
      */
-    public getAllCommandMetadata(): RESTPostAPIChatInputApplicationCommandsJSONBody[] {
+    public getAllCommandMetadata(): RESTPostAPIApplicationCommandsJSONBody[] {
         return this.commands.getAllCommandMetadata();
     }
 
@@ -373,60 +374,65 @@ class DiscordBot {
             }
         }
 
-        // try to find the command the user wants
-        let command = this.commands.findCommand(commandParts);
+        // // try to find the command the user wants
+        // let command = this.commands.findCommand(commandParts);
 
-        // Find the command name
-        let commandName = commandParts.join(' ');
+        // // Find the command name
+        // let commandName = commandParts.join(' ');
 
-        // if there is no valid command found
-        if (!command) {
-            Logger.error(
-                LogMessageTemplates.error.commandNotFound
-                    .replaceAll('{INTERACTION_ID}', interaction.id)
-                    .replaceAll('{COMMAND_NAME}', commandName)
-            );
-            return;
-        }
-
-        // interaction.is
-
-        // // autocomplete interaction
-        // if (interaction.isAutocomplete()) {
-        //     try {
-        //         // Get the choices available for the auto complete options
-        //         let choices = await (command! as SlashCommand).autocomplete(interaction); // PROBLEM WITH PROXIED COMMANDS
-        //         console.log("CHOICES:", choices)
-        //         // Respond with the auto complete options if there are any -- remove any options above the discord limit of 25 per
-        //         await interaction.respond(choices? choices.slice(0, DiscordLimits.CHOICES_PER_AUTOCOMPLETE) : []);
-                
-        //     } catch (error) {
-        //         // Catch anyt autocomplete error
-        //         Logger.error(
-        //             interaction.channel instanceof TextChannel ||
-        //             interaction.channel instanceof NewsChannel ||
-        //             interaction.channel instanceof ThreadChannel
-        //                 ? LogMessageTemplates.error.autocompleteGuild
-        //                         .replaceAll('{INTERACTION_ID}', interaction.id)
-        //                         .replaceAll('{OPTION_NAME}', commandName)
-        //                         .replaceAll('{COMMAND_NAME}', commandName)
-        //                         .replaceAll('{USER_TAG}', interaction.user.tag)
-        //                         .replaceAll('{USER_ID}', interaction.user.id)
-        //                         .replaceAll('{CHANNEL_NAME}', interaction.channel.name)
-        //                         .replaceAll('{CHANNEL_ID}', interaction.channel.id)
-        //                         .replaceAll('{GUILD_NAME}', interaction.guild?.name ?? "UNDEFINED")
-        //                         .replaceAll('{GUILD_ID}', interaction.guild?.id ?? "UNDEFINED")
-        //                 : LogMessageTemplates.error.autocompleteOther
-        //                         .replaceAll('{INTERACTION_ID}', interaction.id)
-        //                         .replaceAll('{OPTION_NAME}', commandName)
-        //                         .replaceAll('{COMMAND_NAME}', commandName)
-        //                         .replaceAll('{USER_TAG}', interaction.user.tag)
-        //                         .replaceAll('{USER_ID}', interaction.user.id),
-        //             error
-        //         );
-        //     }
+        // // if there is no valid command found
+        // if (!command) {
+        //     Logger.error(
+        //         LogMessageTemplates.error.commandNotFound
+        //             .replaceAll('{INTERACTION_ID}', interaction.id)
+        //             .replaceAll('{COMMAND_NAME}', commandName)
+        //     );
         //     return;
-        // } else {
+        // }
+
+        // interaction.isMessageContextMenuCommand()
+        // interaction.isUserContextMenuCommand()
+        // ^^ No SUBCOMMANDS or OPTIONS in ContextMenuCommands
+        // All permissions work the same
+
+        // autocomplete interaction
+        if (interaction.isAutocomplete()) {
+            try {
+                // Get the choices available for the auto complete options
+                let choices = await (command! as SlashCommand).autocomplete(interaction); // PROBLEM WITH PROXIED COMMANDS
+                console.log("CHOICES:", choices)
+                // Respond with the auto complete options if there are any -- remove any options above the discord limit of 25 per
+                await interaction.respond(choices? choices.slice(0, DiscordLimits.CHOICES_PER_AUTOCOMPLETE) : []);
+                
+            } catch (error) {
+                // Catch anyt autocomplete error
+                Logger.error(
+                    interaction.channel instanceof TextChannel ||
+                    interaction.channel instanceof NewsChannel ||
+                    interaction.channel instanceof ThreadChannel
+                        ? LogMessageTemplates.error.autocompleteGuild
+                                .replaceAll('{INTERACTION_ID}', interaction.id)
+                                .replaceAll('{OPTION_NAME}', commandName)
+                                .replaceAll('{COMMAND_NAME}', commandName)
+                                .replaceAll('{USER_TAG}', interaction.user.tag)
+                                .replaceAll('{USER_ID}', interaction.user.id)
+                                .replaceAll('{CHANNEL_NAME}', interaction.channel.name)
+                                .replaceAll('{CHANNEL_ID}', interaction.channel.id)
+                                .replaceAll('{GUILD_NAME}', interaction.guild?.name ?? "UNDEFINED")
+                                .replaceAll('{GUILD_ID}', interaction.guild?.id ?? "UNDEFINED")
+                        : LogMessageTemplates.error.autocompleteOther
+                                .replaceAll('{INTERACTION_ID}', interaction.id)
+                                .replaceAll('{OPTION_NAME}', commandName)
+                                .replaceAll('{COMMAND_NAME}', commandName)
+                                .replaceAll('{USER_TAG}', interaction.user.tag)
+                                .replaceAll('{USER_ID}', interaction.user.id),
+                    error
+                );
+            }
+            return;
+        } else 
+        if(interaction.isMessageContextMenuCommand())
+        {
         
         ///////////////////////////
             // For any command interactions

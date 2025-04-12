@@ -3,6 +3,10 @@
 // import type { EventData } from '../../models/eventData'
 // import { Logger } from '../../services/logger'
 
+import type { Command } from "../../commands/Command";
+import type { SlashCommand } from "../../commands/slash/SlashCommand";
+import { RateLimitProxy } from "../RateLimitProxy";
+
 // import LogMessageTemplates from "../../../lang/logMessageTemplates.json"
 // import { CommandError } from '../../commands/CommandError'
 // import { RateLimiterAbstract, RateLimiterMemory } from 'rate-limiter-flexible'
@@ -162,3 +166,9 @@
 //     }
 
 // }
+
+export abstract class CommandRateLimitProxy extends RateLimitProxy implements Command {
+    //
+}
+
+// export class SlashCommandRateLimitProxy extends CommandRateLimitProxy, SlashCommand

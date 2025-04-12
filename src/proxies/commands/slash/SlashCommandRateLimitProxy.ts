@@ -1,11 +1,15 @@
 import type { RateLimiterAbstract } from "rate-limiter-flexible";
-import { CommandRateLimitProxy } from "../CommandRateLimitProxy";
-import type { SlashCommand } from "../../../commands/slash/SlashCommand";
+import { SlashCommand } from "../../../commands/slash/SlashCommand";
+import { RateLimitProxy } from "../../RateLimitProxy";
 
 /**
  * This proxy class is used to proxy to a SlashCommand to apply a rate limit to it.
+ * The Bridge design pattern has been used to ensure everything is setup well.
  */
-export class SlashCommandRateLimitProxy extends CommandRateLimitProxy {
+export class SlashCommandRateLimitProxy extends SlashCommand, RateLimitProxy {
+
+    protected rateLimiter: RateLimitProxy;
+
     /**
      * Constructs a rate limit proxy for a Slash Command.
      * @param rateLimiter Either a reference to a rate limiter to use, or an object with the details make a new rate limiter, such that:
@@ -14,7 +18,11 @@ export class SlashCommandRateLimitProxy extends CommandRateLimitProxy {
      * @param proxyName The name of the the proxy, used to identify it in logging.
      * @param slashCommand The slash command object that is being rate limited.
      */
-    constructor(rateLimiter: {rateLimitAmount: number, rateLimitInterval: number} | RateLimiterAbstract, proxyName: string, command: SlashCommand) {
-        super(rateLimiter, proxyName, command);
+    constructor(rateLimiter: {rateLimitAmount: number, rateLimitInterval: number} | RateLimiterAbstract, slashCommand: SlashCommand) {
+        // Create the rate limiter
+        super();
+
+        // Create the rate limiter for the slash command
+        this.slashCommand = slashCommand;
     }
 };

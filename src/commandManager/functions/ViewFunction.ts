@@ -2,7 +2,7 @@ import type { CommandManagerFunction } from "../CommandManagerFunction";
 import { Logger } from "../../services/logger"
 import LogMessageTemplates from "../../../lang/logMessageTemplates.json"
 import { FormatCommandList } from "../CommandManagerFunctionWiithOutput";
-import type { APIApplicationCommand, REST, RESTPostAPIChatInputApplicationCommandsJSONBody, RESTPostAPIContextMenuApplicationCommandsJSONBody } from "discord.js";
+import type { APIApplicationCommand, REST, RESTPostAPIApplicationCommandsJSONBody } from "discord.js";
 
 /**
  * This function is used to view which commands are synced with the discord bot, which ones are currently just local, 
@@ -11,10 +11,10 @@ import type { APIApplicationCommand, REST, RESTPostAPIChatInputApplicationComman
 export class ViewFunction extends FormatCommandList implements CommandManagerFunction {
 
     /** List of all of the local commands that already have been uploaded to the bot */
-    private localCommandsOnRemote: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[]
+    private localCommandsOnRemote: RESTPostAPIApplicationCommandsJSONBody[]
 
     /** List of all the local commands that do NOT exist/have been uploaded to the bot */
-    private localCommandsOnly: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[]
+    private localCommandsOnly: RESTPostAPIApplicationCommandsJSONBody[]
 
     /** List of all the commands that ONLY exist/have been uploaded to the bot */
     private remoteCommandsOnly: APIApplicationCommand[]
@@ -25,8 +25,8 @@ export class ViewFunction extends FormatCommandList implements CommandManagerFun
      * @param localCommandsOnly List of all the local commands that do NOT exist/have been uploaded to the bot.
      * @param remoteCommandsOnly List of all the commands that ONLY exist/have been uploaded to the bot.
      */
-    constructor(localCommandsOnRemote: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[],
-        localCommandsOnly: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[],
+    constructor(localCommandsOnRemote: RESTPostAPIApplicationCommandsJSONBody[],
+        localCommandsOnly: RESTPostAPIApplicationCommandsJSONBody[],
         remoteCommandsOnly: APIApplicationCommand[]
     ) {
         super();

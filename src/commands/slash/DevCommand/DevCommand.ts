@@ -46,14 +46,6 @@ export class DevCommand extends SlashCommand implements SlashCommand {
         return "dev"; //Lang.getRef('chatCommands.dev', Language.Default),
     }
 
-    // /**
-    //  * These are the name aliases for the command, if any are to be used.
-    //  * @returns list of the alternate names/aliases for the command.
-    //  */
-    // public getAliases(): string[] {
-    //  //
-    // }
-
     /**
      * Returns the name localizations for different languages, or null if there is none.
      * @returns LocalizationMap for the name localizations or null if there is none.
@@ -119,12 +111,11 @@ export class DevCommand extends SlashCommand implements SlashCommand {
     }
 
     /**
-     * This is the method used to check whether or not the command can be run by the user. If the command cannot be 
-     * run, a CommandError should be thrown stating the reason it will not run. This error will be returned to 
+     * This checks whether or not the user is one of the bot developers. They can only use the command if they are a developer.
      * @param interaction The command interaction being run.
      * @throws CommandError if the command is found to be unable to run.
      */
-    public async checkUsability(interaction: CommandInteraction): Promise<void> {
+    public async checkUsability(interaction: ChatInputCommandInteraction): Promise<void> {
         // Throw an error because the user permissions didn't match
         if(this.userIds.indexOf(interaction.user.id) == -1) {
             throw new CommandError("This action can only be done by developers.");
@@ -137,7 +128,7 @@ export class DevCommand extends SlashCommand implements SlashCommand {
      * @param interaction The interaction causing the command to be triggered.
      * @param data The data related to the event, passed in from the EventDataService.
      */
-    public async executeSlashCommand(client: Client, interaction: ChatInputCommandInteraction, data: EventData): Promise<void> {
+    public async execute(client: Client, interaction: ChatInputCommandInteraction, data: EventData): Promise<void> {
         let optionsList = this.getOptions().map(option => {
             if(option instanceof AutocompletableOption) {
                 return option.getOptionData();

@@ -1,5 +1,5 @@
 import { REST, Routes } from "discord.js";
-import type { RESTPostAPIChatInputApplicationCommandsJSONBody, RESTGetAPIApplicationCommandsResult, RESTPostAPIContextMenuApplicationCommandsJSONBody, APIApplicationCommand } from "discord.js";
+import type { RESTGetAPIApplicationCommandsResult, APIApplicationCommand, RESTPostAPIApplicationCommandsJSONBody } from "discord.js";
 import type { CommandManagerFunction } from "./CommandManagerFunction";
 import { Logger } from "../services/logger";
 import LogMessageTemplates from "../../lang/logMessageTemplates.json"
@@ -19,25 +19,25 @@ export class CommandManager {
     private botToken: string;
 
     /** This holds all of the local commands */
-    private localCommandsMetadata: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[]
+    private localCommandsMetadata: RESTPostAPIApplicationCommandsJSONBody[]
 
     /** These are the remote commands -- they are undefined until they are retrieved */
     private remoteCommands: RESTGetAPIApplicationCommandsResult | undefined
 
     // /** List of all of the local commands that already have been uploaded to the bot */
-    // private localCommandsMetadataOnRemote: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[]
+    // private localCommandsMetadataOnRemote: RESTPostAPIApplicationCommandsJSONBody[]
 
     // /** List of all the local commands that do NOT exist/have been uploaded to the bot */
-    // private localCommandsMetadataOnly: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[]
+    // private localCommandsMetadataOnly: RESTPostAPIApplicationCommandsJSONBody[]
 
     // /** List of all the commands that ONLY exist/have been uploaded to the bot */
-    // private remoteCommandsOnly: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[]
+    // private remoteCommandsOnly: RESTPostAPIApplicationCommandsJSONBody[]
 
     /**
      * This is used to create Command Manager object to run the commands
      */
     constructor(botToken: string, botClientId: string,
-        localCommandsMetadata: (RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[],
+        localCommandsMetadata: RESTPostAPIApplicationCommandsJSONBody[],
     ) {
         this.botToken = botToken;
         this.botClientId = botClientId
@@ -66,7 +66,7 @@ export class CommandManager {
      * Returns a list of all of the local commands that already have been uploaded to the bot.
      * @returns a list of all of the local commands that already have been uploaded to the bot.
      */
-    public async getLocalCommandsOnRemote(): Promise<(RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[]> {
+    public async getLocalCommandsOnRemote(): Promise<RESTPostAPIApplicationCommandsJSONBody[]> {
         let retrievedRemoteCommands = (await this.getRemoteCommands())
         return this.localCommandsMetadata.filter(localCommand =>
             retrievedRemoteCommands.some(remoteCommand => remoteCommand.name === localCommand.name)
@@ -77,7 +77,7 @@ export class CommandManager {
      * Returns a list of all the local commands that do NOT exist/have been uploaded to the bot
      * @returns a list of all the local commands that do NOT exist/have been uploaded to the bot
      */
-    public async getLocalCommandsOnly(): Promise<(RESTPostAPIChatInputApplicationCommandsJSONBody | RESTPostAPIContextMenuApplicationCommandsJSONBody)[]> {
+    public async getLocalCommandsOnly(): Promise<RESTPostAPIApplicationCommandsJSONBody[]> {
         let retrievedRemoteCommands = (await this.getRemoteCommands())
         return this.localCommandsMetadata.filter(
             localCommand => !retrievedRemoteCommands.some(remoteCommand => remoteCommand.name === localCommand.name)

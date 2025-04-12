@@ -16,8 +16,6 @@ import {
     SlashCommandStringOption,
     SlashCommandUserOption,
     type ApplicationCommandOptionChoiceData,
-    type AutocompleteFocusedOption,
-    type CommandInteraction,
     type LocalizationMap,
     type Permissions,
     type RESTPostAPIChatInputApplicationCommandsJSONBody,
@@ -26,7 +24,6 @@ import {
 import { EventData } from '../../models/eventData';
 import type { Command, CommandDeferType } from '../Command';
 import { AutocompletableOption } from './AutocompletableOption';
-import { Logger } from '../../services/logger';
 
 /**
  * This class defines the structure of a basic slash command. Compared to other commands, 
@@ -38,12 +35,6 @@ export abstract class SlashCommand implements Command {
      * @returns the name for the command.
      */
     abstract getName(): string;
-
-    // /**
-    //  * These are the name aliases for the command, if any are to be used.
-    //  * @returns list of the alternate names/aliases for the command.
-    //  */
-    // abstract getAliases(): string[];
 
     /**
      * Returns the name localizations for different languages, or null if there is none.
@@ -102,7 +93,7 @@ export abstract class SlashCommand implements Command {
         // Create the map
         this.autocompleteParameterMap = new Map<string, AutocompletableOption<ApplicationCommandOptionBase>>();
 
-        // Construct the metadata object upon creation
+        // Construct the metadata object upon command creation
         this.metadata = this.buildMetadata();
     }
 
@@ -116,7 +107,6 @@ export abstract class SlashCommand implements Command {
 
     /**
      * This method is used to build the metadata for the command, and also establish the different options.
-     * TODO: Add support for comamnds/subcommand groups
      * @returns The metadata of the command.
      */
     private buildMetadata(): RESTPostAPIChatInputApplicationCommandsJSONBody {
@@ -129,6 +119,9 @@ export abstract class SlashCommand implements Command {
             .setContexts(this.getContexts())
             .setDefaultMemberPermissions(this.getDefaultMemberPermissions())
             .setNSFW(this.getIsNSFW())
+            // TODO: Add support for comamnds/subcommand groups
+            // .addSubcommand(this.getSubcommand())
+            // .addSubcommandGroup(this.getSubcommandGroup())
 
         // Add custom string options
         for(const option of this.getOptions()) {
@@ -138,7 +131,7 @@ export abstract class SlashCommand implements Command {
                 checkOption = option.getOptionData();
                 // option.getOptionData()
 
-                // Used to automatically set the command option to autocomplete
+                // Used to automatically set the command option to autocomplete (allows developer to disable if they want to as well)
                 if(checkOption instanceof ApplicationCommandOptionWithAutocompleteMixin) {
                     checkOption.setAutocomplete(true);
                 }
@@ -215,7 +208,7 @@ export abstract class SlashCommand implements Command {
      * @param interaction The command interaction being run.
      * @throws CommandError if the command is found to be unable to run.
      */
-    abstract checkUsability(interaction: CommandInteraction): Promise<void>;
+    abstract checkUsability(interaction: ChatInputCommandInteraction): Promise<void>;
 
     /**
      * This function will execute whenever the command is called.
@@ -223,56 +216,16 @@ export abstract class SlashCommand implements Command {
      * @param interaction The interaction causing the command to be triggered.
      * @param data The data related to the event, passed in from the EventDataService.
      */
-    public async execute(client: Client, interaction: CommandInteraction, data: EventData): Promise<void> {
-        // autocomplete interaction
-        if (interaction.isAutocomplete()) {
-            try {
-                // Get the choices available for the auto complete options
-                let choices = await (command! as SlashCommand).autocomplete(interaction); // PROBLEM WITH PROXIED COMMANDS
-                console.log("CHOICES:", choices)
-                // Respond with the auto complete options if there are any -- remove any options above the discord limit of 25 per
-                await interaction.respond(choices? choices.slice(0, DiscordLimits.CHOICES_PER_AUTOCOMPLETE) : []);
-                
-            } catch (error) {
-                // Catch anyt autocomplete error
-                Logger.error(
-                    interaction.channel instanceof TextChannel ||
-                    interaction.channel instanceof NewsChannel ||
-                    interaction.channel instanceof ThreadChannel
-                        ? LogMessageTemplates.error.autocompleteGuild
-                                .replaceAll('{INTERACTION_ID}', interaction.id)
-                                .replaceAll('{OPTION_NAME}', commandName)
-                                .replaceAll('{COMMAND_NAME}', commandName)
-                                .replaceAll('{USER_TAG}', interaction.user.tag)
-                                .replaceAll('{USER_ID}', interaction.user.id)
-                                .replaceAll('{CHANNEL_NAME}', interaction.channel.name)
-                                .replaceAll('{CHANNEL_ID}', interaction.channel.id)
-                                .replaceAll('{GUILD_NAME}', interaction.guild?.name ?? "UNDEFINED")
-                                .replaceAll('{GUILD_ID}', interaction.guild?.id ?? "UNDEFINED")
-                        : LogMessageTemplates.error.autocompleteOther
-                                .replaceAll('{INTERACTION_ID}', interaction.id)
-                                .replaceAll('{OPTION_NAME}', commandName)
-                                .replaceAll('{COMMAND_NAME}', commandName)
-                                .replaceAll('{USER_TAG}', interaction.user.tag)
-                                .replaceAll('{USER_ID}', interaction.user.id),
-                    error
-                );
-            }
-            return;
-        } else {
-            // execute command normally
-            await this.executeSlashCommand(client, interaction as ChatInputCommandInteraction, data);
-        }
-        
-    }
+    abstract execute(client: Client, interaction: ChatInputCommandInteraction, data: EventData): Promise<void>
+    
 
-    /**
-     * This function will execute whenever the command is called. This uses a chatInputCommandInteraction because the 
-     * slash command comes from chat.
-     * @param client The Discord client to run any commands to interact with Discord.
-     * @param interaction The interaction causing the command to be triggered.
-     * @param data The data related to the event, passed in from the EventDataService.
-     */
-    abstract executeSlashCommand(client: Client, interaction: ChatInputCommandInteraction, data: EventData): Promise<void>;
+    // /**
+    //  * This function will execute whenever the command is called. This uses a chatInputCommandInteraction because the 
+    //  * slash command comes from chat.
+    //  * @param client The Discord client to run any commands to interact with Discord.
+    //  * @param interaction The interaction causing the command to be triggered.
+    //  * @param data The data related to the event, passed in from the EventDataService.
+    //  */
+    // abstract executeSlashCommand(client: Client, interaction: ChatInputCommandInteraction, data: EventData): Promise<void>;
 
 }

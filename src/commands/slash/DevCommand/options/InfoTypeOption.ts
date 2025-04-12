@@ -2,7 +2,7 @@ import { AutocompleteInteraction, SlashCommandStringOption, type APIApplicationC
 import { AutocompletableOption } from "../../AutocompletableOption";
 
 /**
- * This enum establishes a common set of values that could be returned from the choices
+ * This enum establishes a common set of values that could be returned from the choices.
  */
 export enum DevInfoChoices {
     ALL = "all",
@@ -39,10 +39,10 @@ export class InfoTypeOption extends AutocompletableOption<SlashCommandStringOpti
     public async getChoices(interaction: AutocompleteInteraction): Promise<APIApplicationCommandOptionChoice<DevInfoChoices>[]> {
         const focusedOption = interaction.options.getFocused(true);
         let choices = [
-            {name: "All", value: DevInfoChoices.ALL},
-            {name: "System", value: DevInfoChoices.SYSTEM},
-            {name: "Environment", value: DevInfoChoices.ENVIRONMENT},
-            {name: "Bot", value: DevInfoChoices.BOT}
+            {name: "all", value: DevInfoChoices.ALL},
+            {name: "system", value: DevInfoChoices.SYSTEM},
+            {name: "environment", value: DevInfoChoices.ENVIRONMENT},
+            {name: "bot", value: DevInfoChoices.BOT}
         ];
         // Get the ones that are closest to what's typed already
         return choices.filter(choice => choice.value.startsWith(focusedOption.value));

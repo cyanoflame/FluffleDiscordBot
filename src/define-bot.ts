@@ -6,7 +6,7 @@ import config from '../config/config.json'
 import { DiscordBot } from "./models/DiscordBot"
 import { EventDataService } from "./services/eventDataService"
 import { OnImageMessageTrigger } from "./messageTriggers/OnImageMessageTrigger"
-import { MessageTriggerRateLimitProxy } from "./proxies/MessageTriggerRateLimitProxy"
+import { MessageTriggerRateLimitProxy } from "./proxies/messageTriggers/MessageTriggerRateLimitProxy"
 import { DevCommand } from "./commands/slash/DevCommand/DevCommand"
 
 /**
@@ -76,6 +76,20 @@ export async function defineBot(): Promise<DiscordBot> {
         //     },
         //     "DevCommandRateLimit",
         //     new CommandPermissionProxy(
+        //         [],
+        //         new DevCommand([
+        //             process.env.DEV_USER_ID ?? "undefined"
+        //         ])
+        //     )
+        // )
+
+        // IDEAL:
+        // new SlashCommandRateLimitProxy(
+        //     {
+        //         rateLimitAmount: 3,
+        //         rateLimitInterval: 5
+        //     },
+        //     new SlashCommandPermissionProxy(
         //         [],
         //         new DevCommand([
         //             process.env.DEV_USER_ID ?? "undefined"
