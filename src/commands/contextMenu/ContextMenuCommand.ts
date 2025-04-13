@@ -113,14 +113,5 @@ export abstract class ContextMenuCommand implements Command {
      * @param data The data related to the event, passed in from the EventDataService.
      */
     abstract execute(client: Client, interaction: ContextMenuCommandInteraction, data: EventData): Promise<void>
-    
-    // /**
-    //  * This function will execute whenever the command is called. This uses a chatInputCommandInteraction because the 
-    //  * slash command comes from chat.
-    //  * @param client The Discord client to run any commands to interact with Discord.
-    //  * @param interaction The interaction causing the command to be triggered.
-    //  * @param data The data related to the event, passed in from the EventDataService.
-    //  */
-    // abstract executeContextMenuCommand(client: Client, interaction: ContextMenuCommandInteraction, data: EventData): Promise<void>;
 
 }

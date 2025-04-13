@@ -1,11 +1,11 @@
-import type { MessageTrigger } from '../messageTriggers/MessageTrigger'
+import type { MessageTrigger } from '../../messageTriggers/MessageTrigger'
 import type { Client, Message } from 'discord.js'
-import type { EventData } from '../models/eventData'
-import { Logger } from '../services/logger'
-import { RateLimiterAbstract, RateLimiterMemory } from 'rate-limiter-flexible'
+import type { EventData } from '../../models/eventData'
+import { Logger } from '../../services/logger'
+import { RateLimiterAbstract } from 'rate-limiter-flexible'
 
-import LogMessageTemplates from "../../lang/logMessageTemplates.json"
-import { RateLimitProxy } from './RateLimitProxy'
+import LogMessageTemplates from "../../../lang/logMessageTemplates.json"
+import { RateLimitProxy } from './../RateLimitProxy'
 
 /**
  * This class is used to add a rate limiter to a message trigger as a proxy. This keeps the implementation 

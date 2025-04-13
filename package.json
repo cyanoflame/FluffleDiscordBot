@@ -33,7 +33,7 @@
     "formdata-node": "^6.0.3",
     "pino": "^9.6.0",
     "pino-pretty": "^13.0.0",
-    "rate-limiter-flexible": "^6.2.1",
+    "rate-limiter-flexible": "^7.0.0",
     "sharp": "^0.33.5"
   }
 }

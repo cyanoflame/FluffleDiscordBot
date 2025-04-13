@@ -8,6 +8,7 @@ import { EventDataService } from "./services/eventDataService"
 import { OnImageMessageTrigger } from "./messageTriggers/OnImageMessageTrigger"
 import { MessageTriggerRateLimitProxy } from "./proxies/messageTriggers/MessageTriggerRateLimitProxy"
 import { DevCommand } from "./commands/slash/DevCommand/DevCommand"
+import { SlashCommandRateLimitProxy } from "./proxies/commands/slash/SlashCommandRateLimitProxy"
 
 /**
  * This is the function used to define/create the discord bot used by the program.
@@ -61,13 +62,10 @@ export async function defineBot(): Promise<DiscordBot> {
         }, 
         "OnImageMessageTrigger", 
         new OnImageMessageTrigger()
-    )) // With RateLimit Proxy
+    )); // With RateLimit Proxy
 
     // Create any commands used by the bot
     bot.addCommand(
-        new DevCommand([
-            process.env.DEV_USER_ID ?? "undefined"
-        ])
         // PROBLEM: Since this is proxied, casting this to a SlashCommand doesn't work
         // new CommandRateLimitProxy(
         //     {
@@ -83,19 +81,18 @@ export async function defineBot(): Promise<DiscordBot> {
         //     )
         // )
 
-        // IDEAL:
-        // new SlashCommandRateLimitProxy(
-        //     {
-        //         rateLimitAmount: 3,
-        //         rateLimitInterval: 5
-        //     },
+        new SlashCommandRateLimitProxy(
+            {
+                rateLimitAmount: 3,
+                rateLimitInterval: 5
+            },
         //     new SlashCommandPermissionProxy(
-        //         [],
-        //         new DevCommand([
-        //             process.env.DEV_USER_ID ?? "undefined"
-        //         ])
-        //     )
-        // )
+                // [],
+                new DevCommand([
+                    process.env.DEV_USER_ID ?? "undefined"
+                ])
+            // )
+        )
     );
 
     return bot;
