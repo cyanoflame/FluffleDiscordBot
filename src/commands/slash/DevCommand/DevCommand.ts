@@ -1,5 +1,5 @@
 import { ApplicationCommandOptionBase, ChatInputCommandInteraction, InteractionContextType, PermissionFlagsBits, PermissionsBitField, SlashCommandBuilder, version, type ApplicationCommandOptionChoiceData, type AutocompleteFocusedOption, type AutocompleteInteraction, type Client, type CommandInteraction, type LocalizationMap, type Permissions, type PermissionsString, type RESTPostAPIChatInputApplicationCommandsJSONBody } from "discord.js";
-import { SlashCommand } from "../SlashCommand";
+import { AbstractSlashCommand } from "../SlashCommand";
 import { CommandDeferType } from "../../Command";
 import type { EventData } from "../../../models/eventData";
 import { CommandError } from "../../CommandError";
@@ -11,7 +11,7 @@ import { versionMajorMinor } from "typescript";
 /**
  * This command is used to show statistics to the bot devs when they want to use it.
  */
-export class DevCommand extends SlashCommand implements SlashCommand {
+export class DevCommand extends AbstractSlashCommand {
 
     /** The list of user ids of users able to use the command */
     private userIds: string[];

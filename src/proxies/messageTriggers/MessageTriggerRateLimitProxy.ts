@@ -5,13 +5,17 @@ import { Logger } from '../../services/logger'
 import { RateLimiterAbstract } from 'rate-limiter-flexible'
 
 import LogMessageTemplates from "../../../lang/logMessageTemplates.json"
-import { RateLimitProxy } from './../RateLimitProxy'
+import { RateLimiter } from '../../utils/RateLimiter'
 
 /**
  * This class is used to add a rate limiter to a message trigger as a proxy. This keeps the implementation 
  * abstracted from the MessageTrigger object itself while also making it easy to apply.
  */
-export class MessageTriggerRateLimitProxy extends RateLimitProxy implements MessageTrigger {
+export class MessageTriggerRateLimitProxy implements MessageTrigger {
+    
+    /** The rate limiter used for the class */
+    private rateLimiter: RateLimiter;
+
     /** The reference to the proxied object */
     private messageTrigger: MessageTrigger
 
@@ -28,18 +32,18 @@ export class MessageTriggerRateLimitProxy extends RateLimitProxy implements Mess
      */
     constructor(rateLimiter: {rateLimitAmount: number, rateLimitInterval: number} | RateLimiterAbstract, proxyName: string, messageTrigger: MessageTrigger) {
         // Create the rate limiter
-        super(rateLimiter);
+        this.rateLimiter = new RateLimiter(rateLimiter);
 
         // Store the reference to the proxied object
-        this.messageTrigger = messageTrigger
+        this.messageTrigger = messageTrigger;
 
         // Store the name of the proxy - used for logging
-        this.proxyName = proxyName
+        this.proxyName = proxyName;
     }
 
     /**
-     * This message returns the value from the concrete object for whether or not it requires a guild.
-     * @returns The response from the concrete object.
+     * Returns the proxied message trigger's isGuildRequired result.
+     * @returns the proxied message trigger's isGuildRequired result.
      */
     public isGuildRequired(): boolean {
         return this.messageTrigger.isGuildRequired()
@@ -48,7 +52,8 @@ export class MessageTriggerRateLimitProxy extends RateLimitProxy implements Mess
     /**
      * This method will perform the check for the rate limit on the user sending the message. If it succeeds, 
      * the user is not rate limited, and it will return true. If not, it will return false to rate limit the 
-     * user sending the message.
+     * user sending the message. It checks AFTER other checks are made for the command so it only rate limits 
+     * users if they CAN use it.
      * @param msg The message causing the trigger.
      */
     public async triggered(msg: Message):Promise<boolean> {
@@ -57,7 +62,7 @@ export class MessageTriggerRateLimitProxy extends RateLimitProxy implements Mess
         let isTriggered = await this.messageTrigger.triggered(msg)
         if(isTriggered) {
             // if the trigger is valid, then check for the rate limit
-            if(await this.incrementAndCheckRateLimit(msg.author.id)) {
+            if(await this.rateLimiter.incrementAndCheckRateLimit(msg.author.id)) {
                 // log the rate limit hit
                 Logger.error(LogMessageTemplates.error.userMessageRateLimit
                     .replaceAll('{USER_TAG}', msg.author.tag)
@@ -74,12 +79,12 @@ export class MessageTriggerRateLimitProxy extends RateLimitProxy implements Mess
     }
     
     /**
-     * Execute the concrete object like normal. Nothing to do here since rate limiting involved the checks.
+     * Execute the proxied message trigger's function.
      * @param msg The message casuing the trigger.
      * @param data The data related to the event, passed in from the EventDataService.
      */
     public async execute(client: Client, msg: Message, data: EventData): Promise<void> {
-        await this.messageTrigger.execute(client, msg, data)
+        return this.messageTrigger.execute(client, msg, data)
     }
 
 }

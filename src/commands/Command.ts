@@ -6,8 +6,6 @@ import type {
     Permissions,
     RESTPostAPIApplicationCommandsJSONBody,
 } from 'discord.js';
-import type { SlashCommand } from './slash/SlashCommand';
-import type { ContextMenuCommand } from './contextMenu/ContextMenuCommand';
 import type { EventData } from '../models/eventData';
 
 /**
@@ -56,8 +54,6 @@ export interface Command {
      * @returns If the command needs to be deferred, then should return a CommandDeferType. If not, it should return undefined.
      */
     getDeferType(): CommandDeferType | undefined;
-
-    // REMOVED SINCE DIFFERENT COMMANDS EXPECT DIFFERNT INTERATION TYPES
 
     /**
      * This is the method used to check whether or not the command can be run by the user. If the command cannot be 

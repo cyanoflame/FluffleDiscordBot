@@ -1,10 +1,9 @@
-import { RateLimiterAbstract, RateLimiterMemory } from "rate-limiter-flexible";
+import { type RateLimiterAbstract, RateLimiterMemory } from "rate-limiter-flexible";
 
 /**
- * This class is a abstract class providing rate limiting methods/implementation for any proxies 
- * that want to make use of a rate limiter.
+ * This class is a class providing rate limiting methods/implementation for anything that needs to use it.
  */
-export abstract class RateLimitProxy {
+export class RateLimiter {
 
     /** The rate limiter used for whatever event handler is making use of it */
     private rateLimiter: RateLimiterAbstract;
@@ -14,19 +13,18 @@ export abstract class RateLimitProxy {
      * @param rateLimiter Either a reference to a rate limiter to use, or an object with the details make a new rate limiter, such that:
      * rateLimitAmount - The amount of requests that can be made within an interval before limiting the rate ;
      * rateLimitInterval - The time (in seconds) that a the amount of requests can be made in before triggering a rate limit.
-     * @param proxyName The name of the the proxy, used to identify it in logging.
      */
     constructor(rateLimiter: {rateLimitAmount: number, rateLimitInterval: number} | RateLimiterAbstract) {
         // if the ratelimiter is predefined, then set that. Otherwise, make a new one
-        if(rateLimiter instanceof RateLimiterAbstract) {
-            // set the rate limiter reference
-            this.rateLimiter = rateLimiter
-        } else {
+        if("rateLimitAmount" in rateLimiter && "rateLimitInterval" in rateLimiter) {
             // Create the rate limiter object in memory
             this.rateLimiter = new RateLimiterMemory({
                 points: rateLimiter.rateLimitAmount, 
                 duration: rateLimiter.rateLimitInterval
             })
+        } else {
+            // set the rate limiter reference
+            this.rateLimiter = rateLimiter
         }
     }
 
