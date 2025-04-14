@@ -2,7 +2,7 @@ import type { RESTPostAPIApplicationCommandsJSONBody } from "discord.js";
 import type { Command } from "../commands/Command";
 import { MessageContextMenuCommand } from "../commands/contextMenu/message/MessageContextMenuCommand";
 import { UserContextMenuCommand } from "../commands/contextMenu/user/UserContextMenuCommand";
-import { SlashCommand } from "../commands/slash/SlashCommand";
+import { AbstractSlashCommand } from "../commands/slash/AbstractSlashCommand";
 
 /**
  * This class is used as a Facade for dealing with all of the commands used by the bot.
@@ -15,7 +15,7 @@ export class CommandStore {
     // Commands are separated into different arrays to keep different ones separate.
 
     /** The collection of slash commands stored */
-    private slashCommands: SlashCommand[];
+    private slashCommands: AbstractSlashCommand[];
 
     /** The collection of slash commands stored */
     private messageContextMenuCommands: MessageContextMenuCommand[];
@@ -58,7 +58,7 @@ export class CommandStore {
             return false;
         }
         // Check the command type and add it to the proper collection
-        if(command instanceof SlashCommand) {
+        if(command instanceof AbstractSlashCommand) {
             this.slashCommands.push(command);
         } else
         if(command instanceof MessageContextMenuCommand) {
@@ -128,8 +128,8 @@ export class CommandStore {
      * @param commandParts The parts of the command to search for.
      * @returns The closest matching slash command or undefined if there is none.
      */
-    public findSlashCommand(commandParts: string[]): SlashCommand | undefined {
-        return this.findCommand<SlashCommand>(this.slashCommands, commandParts);
+    public findSlashCommand(commandParts: string[]): AbstractSlashCommand | undefined {
+        return this.findCommand<AbstractSlashCommand>(this.slashCommands, commandParts);
     }
 
     /**

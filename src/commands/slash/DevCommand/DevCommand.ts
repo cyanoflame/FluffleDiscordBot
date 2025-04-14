@@ -1,5 +1,5 @@
 import { ApplicationCommandOptionBase, ChatInputCommandInteraction, InteractionContextType, PermissionFlagsBits, PermissionsBitField, SlashCommandBuilder, version, type ApplicationCommandOptionChoiceData, type AutocompleteFocusedOption, type AutocompleteInteraction, type Client, type CommandInteraction, type LocalizationMap, type Permissions, type PermissionsString, type RESTPostAPIChatInputApplicationCommandsJSONBody } from "discord.js";
-import { AbstractSlashCommand } from "../SlashCommand";
+import { AbstractSlashCommand } from "../AbstractSlashCommand";
 import { CommandDeferType } from "../../Command";
 import type { EventData } from "../../../models/eventData";
 import { CommandError } from "../../CommandError";
