@@ -362,55 +362,56 @@ class DiscordBot {
      */
     private async onCommand(interaction: AutocompleteInteraction | CommandInteraction): Promise<void> {
         // Get the parts of the command to identify it
-        let commandParts: string[] = [interaction.commandName]
-        if(interaction.isChatInputCommand() || interaction.isAutocomplete()) {
-            let subcommandGroup = interaction.options.getSubcommandGroup(false);
-            if(subcommandGroup != null) {
-                commandParts.push(subcommandGroup)
-            }
-            let subcommand = interaction.options.getSubcommand(false);
-            if(subcommand != null) {
-                commandParts.push(subcommand)
-            }
-        }
+        // let commandParts: string[] = [interaction.commandName]
+        // if(interaction.isChatInputCommand() || interaction.isAutocomplete()) {
+        //     let subcommandGroup = interaction.options.getSubcommandGroup(false);
+        //     if(subcommandGroup != null) {
+        //         commandParts.push(subcommandGroup)
+        //     }
+        //     let subcommand = interaction.options.getSubcommand(false);
+        //     if(subcommand != null) {
+        //         commandParts.push(subcommand)
+        //     }
+        // }
 
         // if autocomplete
         if(interaction.isAutocomplete()) {
-            // Get the slash command
-            let command = this.commands.findSlashCommand(commandParts);
+            // Get the command as a slash command
+            let command = this.commands.findCommand(interaction.commandName) as SlashCommand;
             if(command) {
                 let choices = await command.autocomplete(interaction);
                 await interaction.respond(choices? choices.slice(0, DiscordLimits.CHOICES_PER_AUTOCOMPLETE) : []);
             } else {
-    //         // Catch anyt autocomplete error
-    //         Logger.error(
-    //             interaction.channel instanceof TextChannel ||
-    //             interaction.channel instanceof NewsChannel ||
-    //             interaction.channel instanceof ThreadChannel
-    //                 ? LogMessageTemplates.error.autocompleteGuild
-    //                         .replaceAll('{INTERACTION_ID}', interaction.id)
-    //                         .replaceAll('{OPTION_NAME}', commandName)
-    //                         .replaceAll('{COMMAND_NAME}', commandName)
-    //                         .replaceAll('{USER_TAG}', interaction.user.tag)
-    //                         .replaceAll('{USER_ID}', interaction.user.id)
-    //                         .replaceAll('{CHANNEL_NAME}', interaction.channel.name)
-    //                         .replaceAll('{CHANNEL_ID}', interaction.channel.id)
-    //                         .replaceAll('{GUILD_NAME}', interaction.guild?.name ?? "UNDEFINED")
-    //                         .replaceAll('{GUILD_ID}', interaction.guild?.id ?? "UNDEFINED")
-    //                 : LogMessageTemplates.error.autocompleteOther
-    //                         .replaceAll('{INTERACTION_ID}', interaction.id)
-    //                         .replaceAll('{OPTION_NAME}', commandName)
-    //                         .replaceAll('{COMMAND_NAME}', commandName)
-    //                         .replaceAll('{USER_TAG}', interaction.user.tag)
-    //                         .replaceAll('{USER_ID}', interaction.user.id),
-    //             error
-    //         );
-    //     }
+        //     // Catch anyt autocomplete error
+        //     Logger.error(
+        //         interaction.channel instanceof TextChannel ||
+        //         interaction.channel instanceof NewsChannel ||
+        //         interaction.channel instanceof ThreadChannel
+        //             ? LogMessageTemplates.error.autocompleteGuild
+        //                     .replaceAll('{INTERACTION_ID}', interaction.id)
+        //                     .replaceAll('{OPTION_NAME}', commandName)
+        //                     .replaceAll('{COMMAND_NAME}', commandName)
+        //                     .replaceAll('{USER_TAG}', interaction.user.tag)
+        //                     .replaceAll('{USER_ID}', interaction.user.id)
+        //                     .replaceAll('{CHANNEL_NAME}', interaction.channel.name)
+        //                     .replaceAll('{CHANNEL_ID}', interaction.channel.id)
+        //                     .replaceAll('{GUILD_NAME}', interaction.guild?.name ?? "UNDEFINED")
+        //                     .replaceAll('{GUILD_ID}', interaction.guild?.id ?? "UNDEFINED")
+        //             : LogMessageTemplates.error.autocompleteOther
+        //                     .replaceAll('{INTERACTION_ID}', interaction.id)
+        //                     .replaceAll('{OPTION_NAME}', commandName)
+        //                     .replaceAll('{COMMAND_NAME}', commandName)
+        //                     .replaceAll('{USER_TAG}', interaction.user.tag)
+        //                     .replaceAll('{USER_ID}', interaction.user.id),
+        //         error
+        //     );
+        // }
             }
         } else
         if(interaction.isChatInputCommand()) {
             // Get the slash command
-            let command = this.commands.findSlashCommand(commandParts);
+            // let command = this.commands.findSlashCommand(commandParts);
+            let command = this.commands.findCommand(interaction.commandName);
             // if a command was found
             if(command) {
                 // Check for permissions (this could be imp0lemented as a proxy class as well if necessary)
@@ -461,7 +462,7 @@ class DiscordBot {
                 Logger.error(
                     LogMessageTemplates.error.commandNotFound
                         .replaceAll('{INTERACTION_ID}', interaction.id)
-                        .replaceAll('{COMMAND_NAME}', commandParts.join(' '))
+                        .replaceAll('{COMMAND_NAME}', interaction.commandName) //commandParts.join(' '))
                 );
             }
         }
