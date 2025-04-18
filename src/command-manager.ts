@@ -1,6 +1,5 @@
 import { Logger } from "./services/logger"
 import LogMessageTemplates from "../lang/logMessageTemplates.json"
-import { REST, Routes, type APIApplicationCommand, type RESTGetAPIApplicationCommandsResult, type RESTPatchAPIApplicationCommandJSONBody, type RESTPostAPIApplicationCommandsJSONBody, type RESTPostAPIChatInputApplicationCommandsJSONBody, type RESTPostAPIContextMenuApplicationCommandsJSONBody } from "discord.js";
 import { CommandManager } from "./commandManager/CommandManager";
 import type { CommandManagerFunction } from "./commandManager/CommandManagerFunction";
 import { ViewFunction } from "./commandManager/functions/ViewFunction";
@@ -54,10 +53,11 @@ async function start(): Promise<void> {
     // Get the commands local to the bot
     let localCommandMetadata = bot.getAllCommandMetadata();
 
-    // console.log(localCommandMetadata[0].options);
+    // Check if using a dev command server or a specific command server
+    let commandDeployGuild: string | undefined = undefined;
 
-    // Create the manager
-    let manager = new CommandManager(process.env.BOT_TOKEN!, process.env.BOT_ID!, localCommandMetadata)
+    // Create the command manager -- if a COMMAND_GUILD_ID env variable is used, it will handle things for that server ONLY. Otherwise, it handles things globally
+    let manager = new CommandManager(localCommandMetadata, process.env.BOT_TOKEN!, process.env.BOT_ID!, process.env.COMMAND_GUILD_ID);
 
     // Select the proper command
     let command: CommandManagerFunction | undefined = undefined;
@@ -102,7 +102,7 @@ async function start(): Promise<void> {
         }
     }
 
-    // Run the command if it's valid
+    // Run the command if a valid one is chosen
     if(command) {
         manager.executeCommand(command);
     }

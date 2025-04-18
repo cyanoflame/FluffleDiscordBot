@@ -1,13 +1,12 @@
-import type { CommandManagerFunction } from "../CommandManagerFunction";
+import { CommandManagerFunction } from "../CommandManagerFunction";
 import { Logger } from "../../services/logger"
 import LogMessageTemplates from "../../../lang/logMessageTemplates.json"
-import { FormatCommandList } from "../CommandManagerFunctionWiithOutput";
 import { REST, Routes, type RESTPostAPIApplicationCommandsJSONBody } from "discord.js";
 
 /**
  * This function is used to register new functions/upload them to discord for the bot.
  */
-export class RegisterFunction extends FormatCommandList implements CommandManagerFunction {
+export class RegisterFunction extends CommandManagerFunction {
 
     /** List of all of the local commands that already have been uploaded to the bot */
     private localCommandsOnRemote: RESTPostAPIApplicationCommandsJSONBody[]
@@ -29,11 +28,11 @@ export class RegisterFunction extends FormatCommandList implements CommandManage
     }
 
     /**
-     * This is what runs when the command is executed.
+     * Registers/updates a set of commands used by the bot globally.
      * @param rest The REST object being used to communicate with discord for command interactions.
      * @param botClientId The bot's client id that's needed to interact with discord for command interactions.
      */
-    public async execute(rest: REST, botClientId: string): Promise<void> {
+    public async executeGlobal(rest: REST, botClientId: string): Promise<void> {
         // Check if there are any new commands that need to be uploaded to discord
         if (this.localCommandsOnly.length > 0) {
             Logger.info(
@@ -62,16 +61,56 @@ export class RegisterFunction extends FormatCommandList implements CommandManage
 
             // Update all of the commands already uplaoded to discord
             for (let localCmd of this.localCommandsOnRemote) {
-                // routes.applicationGuildCommands()
-                // ^^
-                // Guild-based deployment of commands is best suited for development and testing in your own personal server. 
-                // Once you're satisfied that it's ready, deploy the command globally to publish it to all guilds that your bot is in.
-                // TODO: Add test deployment option for commands to a specific serger
-                await rest.put(Routes.applicationCommands(process.env.BOT_ID!), {
+                await rest.put(Routes.applicationCommands(botClientId), {
                     body: localCmd,
                 });
             }
             Logger.info(LogMessageTemplates.info.commandActionUpdated);
+        }
+    }
+
+    /**
+     * Registers/updates a set of commands used by the bot for a specific guild.
+     * @param rest The REST object being used to communicate with discord for command interactions.
+     * @param botClientId The bot's client id that's needed to interact with discord for command interactions.
+     * @param commandGuildId The id of the guild in which the commands being accessed/modified.
+     */
+    public async executeCommandGuild(rest: REST, botClientId: string, commandGuildId: string): Promise<void> {
+        // Check if there are any new commands that need to be uploaded to discord
+        if (this.localCommandsOnly.length > 0) {
+            Logger.info(
+                LogMessageTemplates.info.commandGuildActionCreating
+                .replaceAll('{COMMAND_LIST}', super.formatCommandList(this.localCommandsOnly))
+                .replaceAll('{GUILD_ID}', commandGuildId)
+            );
+            // Upload the new commands to discord
+            for (let localCmd of this.localCommandsOnly) {
+                await rest.post(Routes.applicationGuildCommands(botClientId, commandGuildId), {
+                    body: localCmd,
+                });
+            }
+            Logger.info(LogMessageTemplates.info.commandGuildActionCreated
+                .replaceAll('{GUILD_ID}', commandGuildId)
+            );
+        }
+
+        // Check if there are any commands that need to be updated on discord for the bot
+        if (this.localCommandsOnRemote.length > 0) {
+            Logger.info(
+                LogMessageTemplates.info.commandGuildActionUpdating
+                .replaceAll('{COMMAND_LIST}', super.formatCommandList(this.localCommandsOnRemote))
+                .replaceAll('{GUILD_ID}', commandGuildId)
+            );
+
+            // Update all of the commands already uploaded to discord
+            for (let localCmd of this.localCommandsOnRemote) {
+                await rest.put(Routes.applicationGuildCommands(botClientId, commandGuildId), {
+                    body: localCmd,
+                });
+            }
+            Logger.info(LogMessageTemplates.info.commandGuildActionUpdated
+                .replaceAll('{GUILD_ID}', commandGuildId)
+            );
         }
     }
 }

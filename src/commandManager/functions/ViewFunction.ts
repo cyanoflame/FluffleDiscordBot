@@ -1,14 +1,13 @@
-import type { CommandManagerFunction } from "../CommandManagerFunction";
+import { CommandManagerFunction } from "../CommandManagerFunction";
 import { Logger } from "../../services/logger"
 import LogMessageTemplates from "../../../lang/logMessageTemplates.json"
-import { FormatCommandList } from "../CommandManagerFunctionWiithOutput";
 import type { APIApplicationCommand, REST, RESTPostAPIApplicationCommandsJSONBody } from "discord.js";
 
 /**
  * This function is used to view which commands are synced with the discord bot, which ones are currently just local, 
  * and which ones are currently just a part of the bot on discord.
  */
-export class ViewFunction extends FormatCommandList implements CommandManagerFunction {
+export class ViewFunction extends CommandManagerFunction {
 
     /** List of all of the local commands that already have been uploaded to the bot */
     private localCommandsOnRemote: RESTPostAPIApplicationCommandsJSONBody[]
@@ -36,11 +35,11 @@ export class ViewFunction extends FormatCommandList implements CommandManagerFun
     }
 
     /**
-     * This is what runs when the command is executed.
+     * Displays a list of commands currently used by the bot globally,
      * @param rest The REST object being used to communicate with discord for command interactions.
      * @param botClientId The bot's client id that's needed to interact with discord for command interactions.
      */
-    public async execute(rest: REST, botClientId: string): Promise<void> {
+    public async executeGlobal(rest: REST, botClientId: string): Promise<void> {
         Logger.info(
             LogMessageTemplates.info.commandActionView
                 .replaceAll(
@@ -49,6 +48,21 @@ export class ViewFunction extends FormatCommandList implements CommandManagerFun
                 )
                 .replaceAll('{LOCAL_ONLY_LIST}', super.formatCommandList(this.localCommandsOnly))
                 .replaceAll('{REMOTE_ONLY_LIST}', super.formatCommandList(this.remoteCommandsOnly))
+        );
+    }
+
+    /**
+     * Displays a list of commands currently used by the bot globally,
+     * @param rest The REST object being used to communicate with discord for command interactions.
+     * @param botClientId The bot's client id that's needed to interact with discord for command interactions.
+     * @param commandGuildId The id of the guild in which the commands being accessed/modified.
+     */
+    public async executeCommandGuild(rest: REST, botClientId: string, commandGuildId: string): Promise<void> {
+        Logger.info(LogMessageTemplates.info.commandGuildActionView
+            .replaceAll('{GUILD_ID}', commandGuildId)
+            .replaceAll('{LOCAL_AND_REMOTE_LIST}', super.formatCommandList(this.localCommandsOnRemote))
+            .replaceAll('{LOCAL_ONLY_LIST}', super.formatCommandList(this.localCommandsOnly))
+            .replaceAll('{REMOTE_ONLY_LIST}', super.formatCommandList(this.remoteCommandsOnly))
         );
     }
 }
