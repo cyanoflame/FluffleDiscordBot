@@ -128,7 +128,7 @@ export class DevCommand extends AbstractSlashCommand {
      * @param interaction The interaction causing the command to be triggered.
      * @param data The data related to the event, passed in from the EventDataService.
      */
-    public async execute(client: Client, interaction: ChatInputCommandInteraction, data: EventData): Promise<void> {
+    public async executeCommand(client: Client, interaction: ChatInputCommandInteraction, data: EventData): Promise<void> {
         let optionsList = this.getOptions().map(option => {
             if(option instanceof AutocompletableOption) {
                 return option.getOptionData();

@@ -247,13 +247,6 @@ class DiscordBot {
             }
 
             // Find the messageTriggers that are current active
-            // let activeMessageTrigger = this.messageTriggers.filter(messageTrigger => {
-            //     if (messageTrigger.isGuildRequired() && !msg.guild) {
-            //         return false
-            //     }
-
-            //     return messageTrigger.triggered(msg)
-            // })
             let activeMessageTriggers: MessageTrigger[] = []
             for(const messageTrigger of this.messageTriggers) {
                 // if message requires a guild and there isn' tone
