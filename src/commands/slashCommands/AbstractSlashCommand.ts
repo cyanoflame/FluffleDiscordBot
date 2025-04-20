@@ -1,20 +1,12 @@
 import {
     ApplicationCommandOptionBase,
-    ApplicationCommandOptionWithAutocompleteMixin,
     AutocompleteInteraction,
     ChatInputCommandInteraction,
     Client,
     InteractionContextType,
-    SlashCommandAttachmentOption,
-    SlashCommandBooleanOption,
     SlashCommandBuilder,
-    SlashCommandChannelOption,
-    SlashCommandIntegerOption,
-    SlashCommandMentionableOption,
-    SlashCommandNumberOption,
-    SlashCommandRoleOption,
-    SlashCommandStringOption,
-    SlashCommandUserOption,
+    SlashCommandSubcommandBuilder,
+    SlashCommandSubcommandGroupBuilder,
     type ApplicationCommandOptionChoiceData,
     type LocalizationMap,
     type Permissions,
@@ -22,10 +14,12 @@ import {
 } from 'discord.js';
 
 import { EventData } from '../../models/eventData';
-import type { Command, CommandDeferType } from '../Command';
-import { AutocompletableOption } from './AutocompletableOption';
+import { CommandDeferType } from '../Command';
 import type { SlashCommand } from './SlashCommand';
-import type { SubcommandElement } from './SubcommandElement';
+import type { SubcommandElement } from './components/SubcommandElement';
+import { Subcommand } from './components/Subcommand';
+import { CommandOptionCollection } from './components/CommandOptionCollection';
+import type { AutocompleteOption } from './components/AutocompleteOption';
 
 /**
  * This class defines the structure of a basic slash command. Compared to other commands, 
@@ -42,54 +36,85 @@ export abstract class AbstractSlashCommand implements SlashCommand {
      * Returns the name localizations for different languages, or null if there is none.
      * @returns LocalizationMap for the name localizations or null if there is none.
      */
-    abstract getNameLocalizations(): LocalizationMap | null;
+    public getNameLocalizations(): LocalizationMap | null {
+        // default result if not overridden
+        return null;
+    }
 
     /**
      * Returns the description of the command.
      * @returns the description of the command.
      */
-    abstract getDescription(): string;
+    public getDescription(): string {
+        // default result if not overridden
+        return "";
+    }
 
     /**
      * Returns the description localizations for different languages, or null if there is none.
      * @returns LocalizationMap for the description localizations or null if there is none.
      */
-    abstract getDescriptionLocalizations(): LocalizationMap | null;
+    public getDescriptionLocalizations(): LocalizationMap | null {
+        // default result if not overridden
+        return null;
+    }
 
     /**
      * Return the contexts that the command can be run in (servers, dms, group dms).
      * @returns the contexts that the command can be run in.
      */
-    abstract getContexts(): InteractionContextType[];
+    public getContexts(): InteractionContextType[] {
+        // default result if not overridden
+        return [
+            InteractionContextType.BotDM,
+            InteractionContextType.Guild,
+            InteractionContextType.PrivateChannel
+        ];
+    }
 
     /**
      * Get the permissions required to be able to run the command.
      * @returns the permissions required to run the command.
      */
-    abstract getDefaultMemberPermissions(): Permissions | bigint | number | null | undefined;
+    public getDefaultMemberPermissions(): Permissions | bigint | number | null | undefined {
+        // default result if not overridden
+        return undefined;
+    }
 
     /**
      * Whether or not the command handles nsfw things. If this is true, it can only be used in channels/places where nsfw content 
      * has been enabled.
      * @returns whether or not the command handles nsfw things.
      */
-    abstract getIsNSFW(): boolean;
+    public getIsNSFW(): boolean {
+        // default result if not overridden
+        return false;
+    }
 
     /**
      * Returns a list of options for the command. If the options are autocomplete options, they should be added 
      * here as well.
      * @returns list of the options for the command, both autofill and not.
      */
-    abstract getOptions(): (ApplicationCommandOptionBase | AutocompletableOption<ApplicationCommandOptionBase>)[];
+    public getOptions(): (ApplicationCommandOptionBase | AutocompleteOption)[] {
+        // default result if not overridden
+        return [];
+    }
+
+    /**
+     * Returns the collection of subcommands and subcommand groups used by the slash command.
+     * @returns the collection of subcommands and subcommand groups used by the slash command.
+     */
+    public getSubcommandElements(): (SlashCommandSubcommandBuilder | SlashCommandSubcommandGroupBuilder | SubcommandElement)[] {
+        // default result if not overridden
+        return [];
+    }
 
     /** This map stores all of the subcommand features used by the slash command */
     private subcommandElements: Map<string, SubcommandElement>;
 
-    /** This stores the functions to get the autocomplete options */
-    private autocompleteParameterMap: Map<string, AutocompletableOption<ApplicationCommandOptionBase>>;
-
-    /** This is the command's metadata -- it's constructed upon object creation */
-    private metadata: RESTPostAPIChatInputApplicationCommandsJSONBody;
+    /** This stores all the options used for the command. */
+    private options: CommandOptionCollection;
 
     /**
      * This function creates the map for the autocomplete parameters/commands.
@@ -98,11 +123,8 @@ export abstract class AbstractSlashCommand implements SlashCommand {
         // Create the subcommand elements map
         this.subcommandElements = new Map<string, SubcommandElement>();
 
-        // Create the map
-        this.autocompleteParameterMap = new Map<string, AutocompletableOption<ApplicationCommandOptionBase>>();
-
-        // Construct the metadata object upon command creation
-        this.metadata = this.buildMetadata();
+        // Create the options collection and initialize it
+        this.options = new CommandOptionCollection(this.getOptions());
     }
 
     /**
@@ -110,14 +132,6 @@ export abstract class AbstractSlashCommand implements SlashCommand {
      * @returns The metadata of the command.
      */
     public getMetadata(): RESTPostAPIChatInputApplicationCommandsJSONBody {
-        return this.metadata;
-    }
-
-    /**
-     * This method is used to build the metadata for the command, and also establish the different options.
-     * @returns The metadata of the command.
-     */
-    private buildMetadata(): RESTPostAPIChatInputApplicationCommandsJSONBody {
         // Build the command from each of the defined methods
         let slashCommandData = new SlashCommandBuilder()
             .setName(this.getName())
@@ -128,52 +142,36 @@ export abstract class AbstractSlashCommand implements SlashCommand {
             .setDefaultMemberPermissions(this.getDefaultMemberPermissions())
             .setNSFW(this.getIsNSFW())
 
-        // Add custom string options
-        for(const option of this.getOptions()) {
-            let checkOption = option;
-            if(option instanceof AutocompletableOption) {
-                // Set the checkOption to the object with the data
-                checkOption = option.getOptionData();
-                // option.getOptionData()
+        // Add custom subcommands
+        for(const subcommandElement of this.getSubcommandElements()) {
+            // Add any normal SlashCommandSubcommandBuilders
+            if(subcommandElement instanceof SlashCommandSubcommandBuilder) {
+                slashCommandData.addSubcommand(subcommandElement);
+            } else
+            // Add any normal SlashCommandSubcommandGroupBuilder
+            if(subcommandElement instanceof SlashCommandSubcommandGroupBuilder) {
+                slashCommandData.addSubcommandGroup(subcommandElement);
+            } else {
+                // Determine whether the command added is a subcommand or a subcommand group
+                if(subcommandElement instanceof Subcommand) {
+                    slashCommandData.addSubcommand(subcommand => 
+                        subcommand
+                            // .add
+                    )
+                } // else
+                // if(subcommandElement instanceof SubcommandGroup) {
+                //     //
+                // }
 
-                // Used to automatically set the command option to autocomplete (allows developer to disable if they want to as well)
-                if(checkOption instanceof ApplicationCommandOptionWithAutocompleteMixin) {
-                    checkOption.setAutocomplete(true);
-                }
-
-                // Add the autocomplete option to the autocomplete parameter map
-                this.autocompleteParameterMap.set(option.getOptionData().name, option);
+                // Add the subcommand element to the map
+                this.subcommandElements.set(subcommandElement.getName(), subcommandElement);
             }
-            // Check against any of the option types and add the option in normally
-            if (checkOption instanceof SlashCommandBooleanOption) {
-                slashCommandData.addBooleanOption(checkOption);
-            } else
-            if(checkOption instanceof SlashCommandUserOption) {
-                slashCommandData.addUserOption(checkOption);
-            } else
-            if(checkOption instanceof SlashCommandChannelOption) {
-                slashCommandData.addChannelOption(checkOption);
-            } else
-            if(checkOption instanceof SlashCommandRoleOption) {
-                slashCommandData.addRoleOption(checkOption);
-            } else
-            if(checkOption instanceof SlashCommandAttachmentOption) {
-                slashCommandData.addAttachmentOption(checkOption);
-            } else
-            if(checkOption instanceof SlashCommandMentionableOption) {
-                slashCommandData.addMentionableOption(checkOption);
-            } else
-            if(checkOption instanceof SlashCommandStringOption) {
-                slashCommandData.addStringOption(checkOption);
-            } else
-            if(checkOption instanceof SlashCommandIntegerOption) {
-                slashCommandData.addIntegerOption(checkOption);
-            } else
-            if(checkOption instanceof SlashCommandNumberOption) {
-                slashCommandData.addNumberOption(checkOption);
-            } 
         }
-        // Return the build data
+
+        // Add the options data
+        this.options.appendOptionsData(slashCommandData);
+        
+        // Return the built command data
         return slashCommandData.toJSON();
     }
 
@@ -202,18 +200,9 @@ export abstract class AbstractSlashCommand implements SlashCommand {
             //     throw new RangeError("No subcommand element matches with the subcommand/subcommandgroup"); // TODO: Language support for this
             // }
         }
-        // Otherwise, run the autocomplete for THIS command
-        // Get the potential options for a command to be autocompleted
-        let option = interaction.options.getFocused(true);
-        // Check the map to see if there's an autocomplete command for the
-        let autocompleteOption = this.autocompleteParameterMap.get(option.name);
-        // if there is one to be autocomplete
-        if(autocompleteOption) {
-            // run the method to get the choices
-            return autocompleteOption.getChoices(interaction);
-        }
-        // otherwise no autocomplete data to return
-        return undefined;
+
+        // Return the autocomplete from the options collection
+        return this.options.autocomplete(interaction);
     }
 
     /** 
@@ -225,7 +214,10 @@ export abstract class AbstractSlashCommand implements SlashCommand {
      * 
      * @returns If the command needs to be deferred, then should return a CommandDeferType. If not, it should return undefined.
      */
-    abstract getDeferType(): CommandDeferType | undefined;
+    public getDeferType(): CommandDeferType | undefined {
+        // default result if not overridden
+        return CommandDeferType.PUBLIC;
+    }
 
     /**
      * This is the method used to check whether or not the command can be run by the user. If the command cannot be 

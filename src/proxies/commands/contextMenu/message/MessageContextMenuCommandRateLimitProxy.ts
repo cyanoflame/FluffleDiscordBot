@@ -6,7 +6,7 @@ import type { RateLimiterAbstract } from "rate-limiter-flexible";
 import { Logger } from '../../../../services/logger'
 import LogMessageTemplates from "../../../../../lang/logMessageTemplates.json"
 import { CommandError } from '../../../../commands/CommandError'
-import { MessageContextMenuCommand } from "../../../../commands/contextMenu/message/MessageContextMenuCommand";
+import { MessageContextMenuCommand } from "../../../../commands/contextMenuCommands/message/MessageContextMenuCommand";
 
 /**
  * This proxy class is used to proxy to a MessageContextMenuCommand to apply a rate limit to one when it needs to execute.

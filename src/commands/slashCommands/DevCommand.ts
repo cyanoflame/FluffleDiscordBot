@@ -1,12 +1,21 @@
-import { ApplicationCommandOptionBase, ChatInputCommandInteraction, InteractionContextType, PermissionFlagsBits, PermissionsBitField, SlashCommandBuilder, version, type ApplicationCommandOptionChoiceData, type AutocompleteFocusedOption, type AutocompleteInteraction, type Client, type CommandInteraction, type LocalizationMap, type Permissions, type PermissionsString, type RESTPostAPIChatInputApplicationCommandsJSONBody } from "discord.js";
-import { AbstractSlashCommand } from "../AbstractSlashCommand";
-import { CommandDeferType } from "../../Command";
-import type { EventData } from "../../../models/eventData";
-import { CommandError } from "../../CommandError";
-import { AutocompletableOption } from "../AutocompletableOption";
-import { DevInfoChoices, InfoTypeOption } from "./options/InfoTypeOption";
+import { ApplicationCommandOptionBase, ChatInputCommandInteraction, InteractionContextType, PermissionFlagsBits, PermissionsBitField, SlashCommandBuilder, version, type APIApplicationCommandOptionChoice, type ApplicationCommandOptionChoiceData, type AutocompleteFocusedOption, type AutocompleteInteraction, type Client, type CommandInteraction, type LocalizationMap, type Permissions, type PermissionsString, type RESTPostAPIChatInputApplicationCommandsJSONBody } from "discord.js";
+import { AbstractSlashCommand } from "./AbstractSlashCommand";
+import { CommandDeferType } from "../Command";
+import type { EventData } from "../../models/eventData";
+import { CommandError } from "../CommandError";
 import { hostname } from "os"
 import { versionMajorMinor } from "typescript";
+import { AutocompleteStringOption } from "./components/AutocompleteStringOption";
+
+/**
+ * This enum establishes a common set of values that could be returned from the choices.
+ */
+export enum DevInfoChoices {
+    ALL = "all",
+    SYSTEM = "system",
+    ENVIRONMENT = "environment",
+    BOT = "bot"
+};
 
 /**
  * This command is used to show statistics to the bot devs when they want to use it.
@@ -34,7 +43,7 @@ export class DevCommand extends AbstractSlashCommand {
      * 
      * @returns If the command needs to be deferred, then should return a CommandDeferType. If not, it should return undefined.
      */
-    public getDeferType(): CommandDeferType | undefined {
+    public override getDeferType(): CommandDeferType | undefined {
         return CommandDeferType.HIDDEN;
     }
 
@@ -42,7 +51,7 @@ export class DevCommand extends AbstractSlashCommand {
      * Returns the name for the command.
      * @returns the name for the command.
      */
-    public getName(): string {
+    public override getName(): string {
         return "dev"; //Lang.getRef('chatCommands.dev', Language.Default),
     }
 
@@ -50,7 +59,7 @@ export class DevCommand extends AbstractSlashCommand {
      * Returns the name localizations for different languages, or null if there is none.
      * @returns LocalizationMap for the name localizations or null if there is none.
      */
-    public getNameLocalizations(): LocalizationMap | null {
+    public override getNameLocalizations(): LocalizationMap | null {
         return null; //Lang.getRefLocalizationMap('chatCommands.dev'),
     }
 
@@ -58,7 +67,7 @@ export class DevCommand extends AbstractSlashCommand {
      * Returns the description of the command.
      * @returns the description of the command.
      */
-    public getDescription(): string {
+    public override getDescription(): string {
         return "Developer use only - shows information about the bot itself."; //Lang.getRef('commandDescs.dev', Language.Default),
     }
 
@@ -66,7 +75,7 @@ export class DevCommand extends AbstractSlashCommand {
      * Returns the description localizations for different languages, or null if there is none.
      * @returns LocalizationMap for the description localizations or null if there is none.
      */
-    public getDescriptionLocalizations(): LocalizationMap | null {
+    public override getDescriptionLocalizations(): LocalizationMap | null {
         return null; //Lang.getRefLocalizationMap('commandDescs.dev'),
     }
 
@@ -74,7 +83,7 @@ export class DevCommand extends AbstractSlashCommand {
      * Return the contexts that the command can be run in (servers, dms, group dms).
      * @returns the contexts that the command can be run in.
      */
-    public getContexts(): InteractionContextType[] {
+    public override getContexts(): InteractionContextType[] {
         return [
             InteractionContextType.BotDM,
             InteractionContextType.Guild,
@@ -86,7 +95,7 @@ export class DevCommand extends AbstractSlashCommand {
      * Get the permissions required to be able to run the command.
      * @returns the permissions required to run the command.
      */
-    public getDefaultMemberPermissions(): Permissions | bigint | number | null | undefined {
+    public override getDefaultMemberPermissions(): Permissions | bigint | number | null | undefined {
         return PermissionFlagsBits.Administrator;
     }
 
@@ -95,7 +104,7 @@ export class DevCommand extends AbstractSlashCommand {
      * has been enabled.
      * @returns whether or not the command handles nsfw things.
      */
-    public getIsNSFW(): boolean {
+    public override getIsNSFW(): boolean {
         return false;
     }
 
@@ -104,10 +113,32 @@ export class DevCommand extends AbstractSlashCommand {
      * here as well.
      * @returns list of the options for the command, both autofill and not.
      */
-    public getOptions(): (ApplicationCommandOptionBase | AutocompletableOption<ApplicationCommandOptionBase>)[] {
+    public override getOptions(): ApplicationCommandOptionBase[] {
         return [
-            new InfoTypeOption()
+            // new InfoTypeOption()
+            new AutocompleteStringOption()
+                .setName("infotype")
+                .setDescription("Get the specific type of information")
+                .setRequired(true)
+                .setAutocompleteChoiceFunction(this.infoTypeAutocompleteFunction)
         ]
+    }
+
+    /**
+     * This is the method used to get the the choices for an autocomplete interaction.
+     * @param interaction The autocomplete interaction that choices need to be responded to.
+     */
+    // public async getChoices(interaction: AutocompleteInteraction): Promise<APIApplicationCommandOptionChoice[]> {
+    private async infoTypeAutocompleteFunction(interaction: AutocompleteInteraction): Promise<APIApplicationCommandOptionChoice<DevInfoChoices>[]> {
+        const focusedOption = interaction.options.getFocused(true);
+        let choices = [
+            {name: "all", value: DevInfoChoices.ALL},
+            {name: "system", value: DevInfoChoices.SYSTEM},
+            {name: "environment", value: DevInfoChoices.ENVIRONMENT},
+            {name: "bot", value: DevInfoChoices.BOT}
+        ];
+        // Get the ones that are closest to what's typed already
+        return choices.filter(choice => choice.value.startsWith(focusedOption.value));
     }
 
     /**
@@ -115,7 +146,7 @@ export class DevCommand extends AbstractSlashCommand {
      * @param interaction The command interaction being run.
      * @throws CommandError if the command is found to be unable to run.
      */
-    public async checkUsability(interaction: ChatInputCommandInteraction): Promise<void> {
+    public override async checkUsability(interaction: ChatInputCommandInteraction): Promise<void> {
         // Throw an error because the user permissions didn't match
         if(this.userIds.indexOf(interaction.user.id) == -1) {
             throw new CommandError("This action can only be done by developers.");
@@ -128,16 +159,16 @@ export class DevCommand extends AbstractSlashCommand {
      * @param interaction The interaction causing the command to be triggered.
      * @param data The data related to the event, passed in from the EventDataService.
      */
-    public async executeCommand(client: Client, interaction: ChatInputCommandInteraction, data: EventData): Promise<void> {
-        let optionsList = this.getOptions().map(option => {
-            if(option instanceof AutocompletableOption) {
-                return option.getOptionData();
-            } else {
-                return option;
-            }
-        });
+    public override async executeCommand(client: Client, interaction: ChatInputCommandInteraction, data: EventData): Promise<void> {
+        // let optionsList = this.getOptions().map(option => {
+        //     if(option instanceof AutocompletableOption) {
+        //         return option.getOptionData();
+        //     } else {
+        //         return option;
+        //     }
+        // });
 
-        let infoType = interaction.options.getString(optionsList[0].name);
+        let infoType = interaction.options.getString(this.getOptions()[0].name);
 
         let outStr = "";
 

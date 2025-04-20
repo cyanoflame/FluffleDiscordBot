@@ -36,7 +36,7 @@ import { PartialUtils } from "../utils/partialUtils"
 import type { MessageTrigger } from "../messageTriggers/MessageTrigger"
 import type { EventDataService } from "../services/eventDataService"
 import { CommandDeferType, type Command } from "../commands/Command"
-import type { SlashCommand } from "../commands/slash/SlashCommand"
+import type { SlashCommand } from "../commands/slashCommands/SlashCommand"
 import { CommandError } from "../commands/CommandError"
 
 import LogMessageTemplates from "../../lang/logMessageTemplates.json"

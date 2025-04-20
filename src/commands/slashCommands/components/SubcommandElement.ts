@@ -1,5 +1,5 @@
 import type { ApplicationCommandOptionChoiceData, AutocompleteInteraction, ChatInputCommandInteraction, Client, LocalizationMap } from "discord.js";
-import type { EventData } from "../../models/eventData";
+import type { EventData } from "../../../models/eventData";
 
 /**
  * This class is used to abstract Subcommands and SubcommandGroups so that they can fit in the same collection.

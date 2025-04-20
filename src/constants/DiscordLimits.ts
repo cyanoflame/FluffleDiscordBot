@@ -29,4 +29,6 @@ export class DiscordLimits {
     public static readonly EMBED_FIELD_NAME_LENGTH = 256;
     /** Discord embeds can have a footers that are at most this many characters long. */
     public static readonly EMBED_FOOTER_LENGTH = 2048;
+    /**Discord slash commands can have information about them that is at most this many characters (https://discord.com/developers/docs/interactions/application-commands#slash-commands). */
+    public static readonly SLASH_COMMAND_INFO_MAX_LENGTH = 8000;
 }

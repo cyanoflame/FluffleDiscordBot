@@ -1,13 +1,13 @@
 import type { ApplicationCommandOptionBase, ApplicationCommandOptionChoiceData, AutocompleteInteraction, ChatInputCommandInteraction, Client, InteractionContextType, LocalizationMap, Permissions, RESTPostAPIChatInputApplicationCommandsJSONBody } from "discord.js";
 import type { CommandDeferType } from "../../../commands/Command";
 import type { EventData } from "../../../models/eventData";
-import type { AutocompletableOption } from "../../../commands/slash/AutocompletableOption";
+import type { AutocompletableOption } from "../../../commands/slashCommands/AutocompletableOption";
 import { RateLimiter } from "../../../utils/RateLimiter";
 import type { RateLimiterAbstract } from "rate-limiter-flexible";
 import { Logger } from '../../../services/logger'
 import LogMessageTemplates from "../../../../lang/logMessageTemplates.json"
 import { CommandError } from '../../../commands/CommandError'
-import type { SlashCommand } from "../../../commands/slash/SlashCommand";
+import type { SlashCommand } from "../../../commands/slashCommands/SlashCommand";
 
 /**
  * This proxy class is used to proxy to a SlashCommand to apply a rate limit to one when it needs to execute.
