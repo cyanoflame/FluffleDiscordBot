@@ -43,20 +43,40 @@ export class BotInfoOptionSubcommand extends Subcommand {
     }
 
     /**
+     * Used to get info about the bot itself and its current state.
+     * @param interaction The interaction that triggered the command.
+     * @returns String with info regarding the bot itself and its current state.
+     */
+    public getBotInfo(interaction: ChatInputCommandInteraction): string {
+        let outStr = "# Bot Info:\n";
+
+        outStr += `**Guild ID**: ${interaction.guild?.id ?? "Undefined"}\n`;
+        outStr += `**Bot ID**: ${interaction.client.user?.id ?? "Undefined"}\n`;
+        outStr += `**User ID**: ${interaction.user.id}\n`;
+
+        //         //         SHARD_COUNT: shardCount.toLocaleString(data.lang),
+        //         //         SERVER_COUNT: serverCount.toLocaleString(data.lang),
+        //         //         SERVER_COUNT_PER_SHARD: Math.round(serverCount / shardCount).toLocaleString(
+        //         //             data.lang
+        //         //         ),
+        //         //         RSS_SIZE: FormatUtils.fileSize(memory.rss),
+        //         //         SHARD_ID: (intr.guild?.shardId ?? 0).toString(),
+        //         //         SERVER_ID: intr.guild?.id ?? Lang.getRef('other.na', data.lang),
+        //         //         BOT_ID: intr.client.user?.id,
+        //         //         USER_ID: intr.user.id,
+
+        return outStr
+    }
+
+    /**
      * This function will execute whatever the subcommand element does when it is called.
      * @param client The Discord client to run any commands to interact with Discord.
      * @param interaction The interaction causing the command to be triggered.
      * @param data The data related to the event, passed in from the EventDataService.
      */
     public override async execute(client: Client, interaction: ChatInputCommandInteraction, data: EventData): Promise<void> {
-        let outStr = "Bot Info:\n";
-
-        outStr += `**Guild ID**: ${interaction.guild?.id ?? "Undefined"}\n`;
-        outStr += `**Bot ID**: ${interaction.client.user?.id ?? "Undefined"}\n`;
-        outStr += `**User ID**: ${interaction.user.id}\n`;
-
         // Reply
-        interaction.reply(outStr);
+        interaction.reply(this.getBotInfo(interaction));
     }
 
 }

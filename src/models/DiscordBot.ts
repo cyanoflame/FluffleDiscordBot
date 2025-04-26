@@ -354,19 +354,6 @@ class DiscordBot {
      * @param interaction The interaction being checked by the bot.
      */
     private async onCommand(interaction: AutocompleteInteraction | CommandInteraction): Promise<void> {
-        // Get the parts of the command to identify it
-        // let commandParts: string[] = [interaction.commandName]
-        // if(interaction.isChatInputCommand() || interaction.isAutocomplete()) {
-        //     let subcommandGroup = interaction.options.getSubcommandGroup(false);
-        //     if(subcommandGroup != null) {
-        //         commandParts.push(subcommandGroup)
-        //     }
-        //     let subcommand = interaction.options.getSubcommand(false);
-        //     if(subcommand != null) {
-        //         commandParts.push(subcommand)
-        //     }
-        // }
-
         // if autocomplete
         if(interaction.isAutocomplete()) {
             // Get the command as a slash command

@@ -131,6 +131,13 @@ export abstract class AbstractSlashCommand implements SlashCommand {
 
         // Create the options collection and initialize it
         this.options = new CommandOptionCollection(this.getOptions());
+
+        // Insert all of the subcommand elements to the collection
+        this.getSubcommandElements().forEach(subcommandElement => {
+            if(subcommandElement instanceof Subcommand || subcommandElement instanceof SubcommandGroup) {
+                this.subcommandElements.set(subcommandElement.getName(), subcommandElement);
+            }
+        });
     }
 
     // /**
@@ -239,7 +246,7 @@ export abstract class AbstractSlashCommand implements SlashCommand {
         // Add the options data
         this.options.appendOptionsData(slashCommandData);
         
-        // Check the metadata's size
+        // Check the metadata's size -- must not be over 8000 chars
         // TODO: finish this later. Some abiguities in what's being counted
 
         // Return the built command data
@@ -344,10 +351,9 @@ export abstract class AbstractSlashCommand implements SlashCommand {
         // Run anything from the subcommand begin run
         if (this.subcommandElements.size > 0) {
             return this.executeSubcommand(client, interaction, data);
-        } else {
-            // Or run the child command's execution
-            return this.executeCommand(client, interaction, data);
         }
+        // Run the child command's execute
+        return this.executeCommand(client, interaction, data);
     }
 
 }

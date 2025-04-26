@@ -45,20 +45,28 @@ export class EnvironmentInfoOptionSubcommand extends Subcommand {
     }
 
     /**
+     * Used to get info about the environment the bot is running in.
+     * @returns String with info regarding the environment the bot is running in.
+     */
+    public getEnvironmentInfo(): string {
+        let outStr = "# Environment Info:\n";
+
+        outStr += `**Bun Version**: ${Bun.version}\n`;
+        outStr += `**Typescript Version**: ${versionMajorMinor}\n`;
+        outStr += `**Discord.js Version**: ${version}\n`;
+
+        return outStr
+    }
+
+    /**
      * This function will execute whatever the subcommand element does when it is called.
      * @param client The Discord client to run any commands to interact with Discord.
      * @param interaction The interaction causing the command to be triggered.
      * @param data The data related to the event, passed in from the EventDataService.
      */
     public override async execute(client: Client, interaction: ChatInputCommandInteraction, data: EventData): Promise<void> {
-        let outStr = "Environment Info:\n";
-
-        outStr += `**Bun Version**: ${Bun.version}\n`;
-        outStr += `**Typescript Version**: ${versionMajorMinor}\n`;
-        outStr += `**Discord.js Version**: ${version}\n`;
-
         // Reply
-        interaction.reply(outStr);
+        interaction.reply(this.getEnvironmentInfo());
     }
 
 }

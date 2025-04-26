@@ -52,9 +52,14 @@ export class AllInfoOptionSubcommand extends Subcommand {
      * @param data The data related to the event, passed in from the EventDataService.
      */
     public override async execute(client: Client, interaction: ChatInputCommandInteraction, data: EventData): Promise<void> {
-        new SystemInfoOptionSubcommand().execute(client, interaction, data);
-        new EnvironmentInfoOptionSubcommand().execute(client, interaction, data);
-        new BotInfoOptionSubcommand().execute(client, interaction, data);
+        // Get all of the information in one string
+        let outStr = "";
+
+        outStr += new SystemInfoOptionSubcommand().getSystemInfo();
+        outStr += new EnvironmentInfoOptionSubcommand().getEnvironmentInfo();
+        outStr += new BotInfoOptionSubcommand().getBotInfo(interaction);
+
+        interaction.reply(outStr);
     }
 
 }
