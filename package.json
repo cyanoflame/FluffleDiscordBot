@@ -28,7 +28,7 @@
     "typescript": "^5.8.2"
   },
   "dependencies": {
-    "discord.js": "^14.18.0",
+    "discord.js": "^14.19.1",
     "form-data-encoder": "^4.0.2",
     "formdata-node": "^6.0.3",
     "pino": "^9.6.0",
