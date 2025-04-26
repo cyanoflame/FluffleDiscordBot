@@ -19,11 +19,14 @@ import type { SlashCommand } from './SlashCommand';
 import type { SubcommandElement } from './components/SubcommandElement';
 import { Subcommand } from './components/Subcommand';
 import { CommandOptionCollection } from './components/CommandOptionCollection';
-import type { AutocompleteOption } from './components/AutocompleteOption';
+import type { AutocompleteOption } from './components/autocomplete/AutocompleteOption';
+import { SubcommandGroup } from './components/SubcommandGroup';
 
 /**
- * This class defines the structure of a basic slash command. Compared to other commands, 
- * slash commands also have an AutoComplete part.
+ * This class defines the structure of a basic slash command. This class is intended to be 
+ * extended for the creation of any new slash command. There are a few fields that must be 
+ * overridden, while others only have to be overridden if something other than the default
+ * is desired.
  */
 export abstract class AbstractSlashCommand implements SlashCommand {
     /**
@@ -134,37 +137,23 @@ export abstract class AbstractSlashCommand implements SlashCommand {
     public getMetadata(): RESTPostAPIChatInputApplicationCommandsJSONBody {
         // Build the command from each of the defined methods
         let slashCommandData = new SlashCommandBuilder()
-            .setName(this.getName())
-            .setNameLocalizations(this.getNameLocalizations())
-            .setDescription(this.getDescription())
-            .setDescriptionLocalizations(this.getDescriptionLocalizations())
-            .setContexts(this.getContexts())
-            .setDefaultMemberPermissions(this.getDefaultMemberPermissions())
-            .setNSFW(this.getIsNSFW())
+        .setName(this.getName())
+        .setNameLocalizations(this.getNameLocalizations())
+        .setDescription(this.getDescription())
+        .setDescriptionLocalizations(this.getDescriptionLocalizations())
+        .setContexts(this.getContexts())
+        .setDefaultMemberPermissions(this.getDefaultMemberPermissions())
+        .setNSFW(this.getIsNSFW())
 
-        // Add custom subcommands
+        // Add Subcommands/SubcommandGroups to metadata
         for(const subcommandElement of this.getSubcommandElements()) {
             // Add any normal SlashCommandSubcommandBuilders
-            if(subcommandElement instanceof SlashCommandSubcommandBuilder) {
-                slashCommandData.addSubcommand(subcommandElement);
+            if(subcommandElement instanceof Subcommand) {
+                subcommandElement.appendMetadata(slashCommandData);
             } else
             // Add any normal SlashCommandSubcommandGroupBuilder
-            if(subcommandElement instanceof SlashCommandSubcommandGroupBuilder) {
-                slashCommandData.addSubcommandGroup(subcommandElement);
-            } else {
-                // Determine whether the command added is a subcommand or a subcommand group
-                if(subcommandElement instanceof Subcommand) {
-                    slashCommandData.addSubcommand(subcommand => 
-                        subcommand
-                            // .add
-                    )
-                } // else
-                // if(subcommandElement instanceof SubcommandGroup) {
-                //     //
-                // }
-
-                // Add the subcommand element to the map
-                this.subcommandElements.set(subcommandElement.getName(), subcommandElement);
+            if(subcommandElement instanceof SubcommandGroup) {
+                subcommandElement.appendMetadata(slashCommandData);
             }
         }
 

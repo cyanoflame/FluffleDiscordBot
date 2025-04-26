@@ -1,7 +1,7 @@
 import type { ApplicationCommandOptionBase, ApplicationCommandOptionChoiceData, AutocompleteInteraction, ChatInputCommandInteraction, Client, InteractionContextType, LocalizationMap, Permissions, RESTPostAPIChatInputApplicationCommandsJSONBody } from "discord.js";
 import type { Command, CommandDeferType } from "../Command";
 import type { EventData } from "../../models/eventData";
-import type { AutocompleteOption } from "./components/AutocompleteOption";
+import type { AutocompleteOption } from "./components/autocomplete/AutocompleteOption";
 
 /**
  * This is the interface used by all slash commands.

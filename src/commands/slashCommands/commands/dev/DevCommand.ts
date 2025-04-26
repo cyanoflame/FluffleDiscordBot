@@ -1,11 +1,11 @@
 import { ApplicationCommandOptionBase, ChatInputCommandInteraction, InteractionContextType, PermissionFlagsBits, PermissionsBitField, SlashCommandBuilder, version, type APIApplicationCommandOptionChoice, type ApplicationCommandOptionChoiceData, type AutocompleteFocusedOption, type AutocompleteInteraction, type Client, type CommandInteraction, type LocalizationMap, type Permissions, type PermissionsString, type RESTPostAPIChatInputApplicationCommandsJSONBody } from "discord.js";
-import { AbstractSlashCommand } from "./AbstractSlashCommand";
-import { CommandDeferType } from "../Command";
-import type { EventData } from "../../models/eventData";
-import { CommandError } from "../CommandError";
+import { AbstractSlashCommand } from "../../AbstractSlashCommand";
+import { CommandDeferType } from "../../../Command";
+import type { EventData } from "../../../../models/eventData";
+import { CommandError } from "../../../CommandError";
 import { hostname } from "os"
 import { versionMajorMinor } from "typescript";
-import { AutocompleteStringOption } from "./components/AutocompleteStringOption";
+import { AutocompleteStringOption } from "../../components/autocomplete/AutocompleteStringOption";
 
 /**
  * This enum establishes a common set of values that could be returned from the choices.

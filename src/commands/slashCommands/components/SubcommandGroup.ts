@@ -1,12 +1,17 @@
-import { SlashCommandSubcommandGroupBuilder, type ApplicationCommandOptionBase, type ApplicationCommandOptionChoiceData, type AutocompleteInteraction, type ChatInputCommandInteraction, type Client, type LocalizationMap, type SlashCommandBuilder, type SlashCommandSubcommandBuilder } from "discord.js";
+import { SlashCommandSubcommandGroupBuilder, type ApplicationCommandOptionBase, type ApplicationCommandOptionChoiceData, type AutocompleteInteraction, type ChatInputCommandInteraction, type Client, type LocalizationMap, type SlashCommandBuilder } from "discord.js";
 import type { Subcommand } from "./Subcommand";
 import type { SubcommandElement } from "./SubcommandElement";
 import type { EventData } from "../../../models/eventData";
 
 /**
- * The purpose of this class is to be extended when a user wants to make a new subcommand group.
- * This is the base class for a subcommand group. It just holds a collection of subcommands to reference 
- * when anything is called.
+ * This class defines the structure of a slash command subcommand group. This class is 
+ * intended to be extended for the creation of any new subcommand group. There are a few 
+ * fields that must be overridden, while others only have to be overridden if something 
+ * other than the default is desired.
+ * 
+ * Subcommand groups are collections of subcommands that a slash command could branch 
+ * off to. Each subcommand group MUST have at least 1 subcommand. Each slash command 
+ * can have both subcommands and subcommand groups.
  */
 export abstract class SubcommandGroup implements SubcommandElement {
 

@@ -2,12 +2,18 @@ import type { SubcommandElement } from "./SubcommandElement";
 import { SlashCommandSubcommandBuilder, type ApplicationCommandOptionBase, type ApplicationCommandOptionChoiceData, type AutocompleteInteraction, type ChatInputCommandInteraction, type Client, type LocalizationMap, type SlashCommandBuilder, type SlashCommandSubcommandGroupBuilder } from "discord.js";
 import type { EventData } from "../../../models/eventData";
 import { CommandOptionCollection } from "./CommandOptionCollection";
-import type { AutocompleteOption } from "./AutocompleteOption";
+import type { AutocompleteOption } from "./autocomplete/AutocompleteOption";
 
 /**
- * The purpose of this class is to be extended when a user wants to make a new subcommand.
- * This is the base class for a subcommand. Subcommands have their own execution method and autocomplete structure 
- * associated with them. They are run instead of the main execute command for the slash command.
+ * This class defines the structure of a slash command subcommand. This class is 
+ * intended to be extended for the creation of any new subcommand. There are a few 
+ * fields that must be overridden, while others only have to be overridden if something 
+ * other than the default is desired.
+ * 
+ * Subcommands are pretty much just "specially marked/grouped" parameters. They are 
+ * functionally the same as parameters, though mainly intended for different 
+ * flows/functions in one command. Subcommands can be parts of commands or subcommand 
+ * groups.
  */
 export abstract class Subcommand implements SubcommandElement {
 
@@ -15,7 +21,7 @@ export abstract class Subcommand implements SubcommandElement {
     private options: CommandOptionCollection;
 
     /**
-     * This creates
+     * This creates the object and the options collection used in it.
      */
     constructor() {
         // Create the options collection and initialize it

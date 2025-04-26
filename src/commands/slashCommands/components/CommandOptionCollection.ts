@@ -1,14 +1,15 @@
 import { ApplicationCommandOptionBase, SlashCommandAttachmentOption, SlashCommandBooleanOption, SlashCommandBuilder, SlashCommandChannelOption, SlashCommandIntegerOption, SlashCommandMentionableOption, SlashCommandNumberOption, SlashCommandRoleOption, SlashCommandStringOption, SlashCommandSubcommandBuilder, SlashCommandUserOption, type ApplicationCommandOptionChoiceData, type AutocompleteInteraction } from "discord.js";
-import type { AutocompleteOption } from "./AutocompleteOption";
+import type { AutocompleteOption } from "./autocomplete/AutocompleteOption";
 
 /**
- * This class is used to store a collection of command options and deal with them and their autocompletes.
+ * This class is used to store a collection of command options and deal with them and their autocompletes. It is 
+ * primarily implemented by slash commands and subcommands.
  */
 export class CommandOptionCollection {
 
     /** This stores the functions to get the autocomplete options */
     private autocompleteOptions: Map<string, AutocompleteOption>;
-    /** This stores all the options kept in the collection -- SWITCH TO ARRAY + SET IF PARAM ORDER MATTERS */
+    /** This stores all the options kept in the collection -- SWITCH TO ARRAY + SET IF OPTION ORDER BECOMES AN ISSUE */
     private options: Map<string, ApplicationCommandOptionBase>;
 
     /**
