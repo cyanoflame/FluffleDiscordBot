@@ -81,20 +81,20 @@ export async function defineBot(): Promise<DiscordBot> {
         )
     );
 
-    // bot.addCommand(
-    //     new SlashCommandRateLimitProxy(
-    //         {
-    //             rateLimitAmount: 3,
-    //             rateLimitInterval: 5
-    //         },
-    //     //     new SlashCommandPermissionProxy(
-    //             // [],
-    //             new TestCommand([
-    //                 process.env.DEV_USER_ID ?? "undefined"
-    //             ])
-    //         // )
-    //     )
-    // );
+    bot.addCommand(
+        new SlashCommandRateLimitProxy(
+            {
+                rateLimitAmount: 3,
+                rateLimitInterval: 5
+            },
+        //     new SlashCommandPermissionProxy(
+                // [],
+                new TestCommand([
+                    process.env.DEV_USER_ID ?? "undefined"
+                ])
+            // )
+        )
+    );
 
     return bot;
 }

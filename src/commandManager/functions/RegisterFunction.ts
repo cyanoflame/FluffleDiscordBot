@@ -43,7 +43,7 @@ export class RegisterFunction extends CommandManagerFunction {
             );
             // Upload the new commands to discord
             for (let localCmd of this.localCommandsOnly) {
-                await rest.post(Routes.applicationCommands(process.env.BOT_ID!), {
+                await rest.put(Routes.applicationCommands(process.env.BOT_ID!), {
                     body: localCmd,
                 });
             }
@@ -84,11 +84,9 @@ export class RegisterFunction extends CommandManagerFunction {
                 .replaceAll('{GUILD_ID}', commandGuildId)
             );
             // Upload the new commands to discord
-            for (let localCmd of this.localCommandsOnly) {
-                await rest.post(Routes.applicationGuildCommands(botClientId, commandGuildId), {
-                    body: localCmd,
-                });
-            }
+            await rest.put(Routes.applicationGuildCommands(botClientId, commandGuildId), {
+                body: this.localCommandsOnly,
+            });
             Logger.info(LogMessageTemplates.info.commandGuildActionCreated
                 .replaceAll('{GUILD_ID}', commandGuildId)
             );
@@ -103,11 +101,9 @@ export class RegisterFunction extends CommandManagerFunction {
             );
 
             // Update all of the commands already uploaded to discord
-            for (let localCmd of this.localCommandsOnRemote) {
-                await rest.put(Routes.applicationGuildCommands(botClientId, commandGuildId), {
-                    body: localCmd,
-                });
-            }
+            await rest.put(Routes.applicationGuildCommands(botClientId, commandGuildId), {
+                body: this.localCommandsOnRemote,
+            });
             Logger.info(LogMessageTemplates.info.commandGuildActionUpdated
                 .replaceAll('{GUILD_ID}', commandGuildId)
             );
