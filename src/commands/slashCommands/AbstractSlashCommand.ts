@@ -197,7 +197,7 @@ export abstract class AbstractSlashCommand implements SlashCommand {
             } 
             // else {
             //     // Throw an error for when there is no subcommand found
-            //     throw new RangeError("No subcommand element matches with the subcommand/subcommandgroup"); // TODO: Language support for this
+            //     throw new Error("No subcommand element matches with the subcommand/subcommandgroup"); // TODO: Language support for this
             // }
         }
 
@@ -250,7 +250,7 @@ export abstract class AbstractSlashCommand implements SlashCommand {
             } 
             // else {
             //     // Throw an error for when there is no subcommand found
-            //     throw new RangeError("No subcommand element matches with the subcommand/subcommandgroup"); // TODO: Language support for this
+            //     throw new Error("No subcommand element matches with the subcommand/subcommandgroup"); // TODO: Language support for this
             // }
         }
     }
@@ -272,9 +272,12 @@ export abstract class AbstractSlashCommand implements SlashCommand {
      */
     public async execute(client: Client, interaction: ChatInputCommandInteraction, data: EventData): Promise<void> {
         // Run anything from the subcommand begin run
-        await this.executeSubcommand(client, interaction, data);
-        // Run the child command's execution
-        return this.executeCommand(client, interaction, data);
+        if (this.subcommandElements.size > 0) {
+            return this.executeSubcommand(client, interaction, data);
+        } else {
+            // Or run the child command's execution
+            return this.executeCommand(client, interaction, data);
+        }
     }
 
 }
