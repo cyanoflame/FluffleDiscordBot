@@ -4,6 +4,7 @@ import {
     ChatInputCommandInteraction,
     Client,
     InteractionContextType,
+    Locale,
     SlashCommandBuilder,
     SlashCommandSubcommandBuilder,
     SlashCommandSubcommandGroupBuilder,
@@ -94,6 +95,8 @@ export abstract class AbstractSlashCommand implements SlashCommand {
         return false;
     }
 
+    // public getArguments
+
     /**
      * Returns a list of options for the command. If the options are autocomplete options, they should be added 
      * here as well.
@@ -130,8 +133,84 @@ export abstract class AbstractSlashCommand implements SlashCommand {
         this.options = new CommandOptionCollection(this.getOptions());
     }
 
+    // /**
+    //  * Used to get the longest string value in a localization map. Used in the calculation of the 
+    //  * metadata character limit.
+    //  * @param localizationMap The localization map of strings to get the longest value from.
+    //  * @returns the length of the longest localization in the map.
+    //  */
+    // private static getLongestLocalizationValue(localizationMap: Partial<Record<Locale, string | null>>): number {
+    //     // Track the longest found
+    //     let longest = 0;
+    //     // Get the longest localization name
+    //     for(const localization in localizationMap) {
+    //         // get the localization value
+    //         let localizationValue = localizationMap[localization as Locale]
+    //         // Check if it exists, and if it's the longest
+    //         if(localizationValue && localizationValue.length > longest) {
+    //             longest = localizationValue.length;
+    //         }
+    //     }
+    //     // Return the longest found
+    //     return longest;
+    // }
+
+    // /**
+    //  * This function is used to test whether or the metadata of a command is less than the character limit. 
+    //  * See https://discord.com/developers/docs/interactions/application-commands#slash-commands for more info.
+    //  * If the command metadata is longer than the metadata character limit, it will not upload to Discord.
+    //  * @param metadata The metadata which to check against the character limit.
+    //  * @param characterLimit The number of characters which size of the metadata must be under.
+    //  * @returns whether or not the metadata falls under the specified character limit.
+    //  */
+    // public static checkMetadataCharacterLimit(metadata: SlashCommandBuilder, characterLimit: number): boolean {
+    //     // Track the character count here
+    //     let count = 0;
+
+    //     // Add the name length
+    //     let longest = metadata.name.length;
+    //     if(metadata.name_localizations) {
+    //         let longestLocalization = AbstractSlashCommand.getLongestLocalizationValue(metadata.name_localizations);
+    //         // Check if the longest localization is greater than the default
+    //         if(longestLocalization > longest) {
+    //             longest = longestLocalization;
+    //         }
+    //     }
+    //     // Add the longest to the total
+    //     count += longest;
+
+    //     // Add the description length
+    //     longest = metadata.description.length;
+    //     if(metadata.description_localizations) {
+    //         let longestLocalization = AbstractSlashCommand.getLongestLocalizationValue(metadata.description_localizations);
+    //         // Check if the longest localization is greater than the default
+    //         if(longestLocalization > longest) {
+    //             longest = longestLocalization;
+    //         }
+    //     }
+    //     // Add the longest to the total
+    //     count += longest;
+
+    //     // Add the values length
+    //     metadata
+    //     longest = metadata.description.length;
+    //     if(metadata.description_localizations) {
+    //         let longestLocalization = AbstractSlashCommand.getLongestLocalizationValue(metadata.description_localizations);
+    //         // Check if the longest localization is greater than the default
+    //         if(longestLocalization > longest) {
+    //             longest = longestLocalization;
+    //         }
+    //     }
+    //     // Add the longest to the total
+    //     count += longest;
+
+    //     return false
+    // }
+
     /**
-     * This method is used to get the full metadata for the command.
+     * This method is used to get the full metadata for the command. Note: there is a character 
+     * limit to the amount of things that can be used: 
+     * https://discord.com/developers/docs/interactions/application-commands#slash-commands
      * @returns The metadata of the command.
      */
     public getMetadata(): RESTPostAPIChatInputApplicationCommandsJSONBody {
@@ -160,6 +239,9 @@ export abstract class AbstractSlashCommand implements SlashCommand {
         // Add the options data
         this.options.appendOptionsData(slashCommandData);
         
+        // Check the metadata's size
+        // TODO: finish this later. Some abiguities in what's being counted
+
         // Return the built command data
         return slashCommandData.toJSON();
     }
@@ -171,14 +253,14 @@ export abstract class AbstractSlashCommand implements SlashCommand {
      */
     public async autocomplete(interaction: AutocompleteInteraction): Promise<ApplicationCommandOptionChoiceData[] | undefined> {
         // if the command has sub commands, check the sub commands for their autocomplete
-        if (this.subcommandElements.size > 0) {
+        if(this.subcommandElements.size > 0) {
             // if the interaction is part of a subcommand group
             let subcommandElementName: string | null = interaction.options.getSubcommandGroup();
             // if it's not partof a command group, then it must be part of a subcommand
             if(!subcommandElementName) {
                 subcommandElementName = interaction.options.getSubcommand();
             }
-            // The the subcommadn element and propagate the autocomplete
+            // Get the subcommand element and propagate the autocomplete
             let subcommandElement = this.subcommandElements.get(subcommandElementName);
             // Propagate the interaction
             if (subcommandElement) {
@@ -189,7 +271,6 @@ export abstract class AbstractSlashCommand implements SlashCommand {
             //     throw new Error("No subcommand element matches with the subcommand/subcommandgroup"); // TODO: Language support for this
             // }
         }
-
         // Return the autocomplete from the options collection
         return this.options.autocomplete(interaction);
     }

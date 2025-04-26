@@ -1,4 +1,4 @@
-import { AutocompleteInteraction, SlashCommandIntegerOption, type APIApplicationCommandOptionChoice, type RestOrArray } from "discord.js";
+import { AutocompleteInteraction, SlashCommandIntegerOption, type APIApplicationCommandIntegerOption, type APIApplicationCommandOptionChoice, type RestOrArray } from "discord.js";
 import type { AutocompleteOption } from "./AutocompleteOption";
 
 /**
@@ -15,6 +15,8 @@ export class AutocompleteIntegerOption extends SlashCommandIntegerOption impleme
         super();
         // This autocomplete choices function has not been set
         this.choiceFunction = undefined;
+        // Set the function to autocomplete
+        super.setAutocomplete(true);
     }
 
     // /**
@@ -50,5 +52,20 @@ export class AutocompleteIntegerOption extends SlashCommandIntegerOption impleme
         }
         // nothing since the function was not established
         return [];
+    }
+
+    /**
+     * When getting the JSON, exclude any of the child class fields.
+     * @returns The JSON of just the parent class fields.
+     */
+    public override toJSON(): APIApplicationCommandIntegerOption {
+        // used to get the reference to the variable type
+        let choiceFunctionRef = this.choiceFunction;
+        // Creates a JSON of this object, with everything included from the child class
+        let temp = super.toJSON() as APIApplicationCommandIntegerOption & { choiceFunction: typeof choiceFunctionRef };
+        // Delete the private fields from it otherwise, they show up in the toJSON()
+        delete temp.choiceFunction;
+        // Return JSON from new object
+        return temp as APIApplicationCommandIntegerOption;
     }
 }

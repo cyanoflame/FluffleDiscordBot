@@ -53,6 +53,8 @@ async function start(): Promise<void> {
     // Get the commands local to the bot
     let localCommandMetadata = bot.getAllCommandMetadata();
 
+    console.log("Command Metadata:", localCommandMetadata)
+
     // Check if using a dev command server or a specific command server
     let commandDeployGuild: string | undefined = undefined;
 

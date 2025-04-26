@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionBase, SlashCommandAttachmentOption, SlashCommandBooleanOption, SlashCommandBuilder, SlashCommandChannelOption, SlashCommandIntegerOption, SlashCommandMentionableOption, SlashCommandNumberOption, SlashCommandRoleOption, SlashCommandStringOption, SlashCommandSubcommandBuilder, SlashCommandUserOption, type ApplicationCommandOptionChoiceData, type AutocompleteInteraction } from "discord.js";
+import { ApplicationCommandOptionBase, ApplicationCommandOptionWithAutocompleteMixin, SlashCommandAttachmentOption, SlashCommandBooleanOption, SlashCommandBuilder, SlashCommandChannelOption, SlashCommandIntegerOption, SlashCommandMentionableOption, SlashCommandNumberOption, SlashCommandRoleOption, SlashCommandStringOption, SlashCommandSubcommandBuilder, SlashCommandUserOption, type ApplicationCommandOptionChoiceData, type AutocompleteInteraction } from "discord.js";
 import type { AutocompleteOption } from "./autocomplete/AutocompleteOption";
 
 /**
@@ -45,6 +45,7 @@ export class CommandOptionCollection {
      * @param options The options being added to the collection initially
      */
     public addAmbiguousOption(option: (ApplicationCommandOptionBase | AutocompleteOption)): boolean {
+        // Check whether the option is an autocomplete option or a regular option type
         if(typeof (option as any).getAutocompleteChoices == "function") {
             return this.addAutocompleteOption(option as AutocompleteOption);
         } else {

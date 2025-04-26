@@ -1,7 +1,8 @@
-import type { ApplicationCommandOptionBase, ApplicationCommandOptionChoiceData, AutocompleteInteraction, ChatInputCommandInteraction, Client, InteractionContextType, LocalizationMap, Permissions, RESTPostAPIChatInputApplicationCommandsJSONBody } from "discord.js";
+import type { ApplicationCommandOptionBase, ApplicationCommandOptionChoiceData, AutocompleteInteraction, ChatInputCommandInteraction, Client, InteractionContextType, LocalizationMap, Permissions, RESTPostAPIChatInputApplicationCommandsJSONBody, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder } from "discord.js";
 import type { Command, CommandDeferType } from "../Command";
 import type { EventData } from "../../models/eventData";
 import type { AutocompleteOption } from "./components/autocomplete/AutocompleteOption";
+import type { SubcommandElement } from "./components/SubcommandElement";
 
 /**
  * This is the interface used by all slash commands.
@@ -56,6 +57,12 @@ export interface SlashCommand extends Command {
      * @returns list of the options for the command, both autofill and not.
      */
     getOptions(): (ApplicationCommandOptionBase | AutocompleteOption)[];
+
+    /**
+     * Returns the collection of subcommands and subcommand groups used by the slash command.
+     * @returns the collection of subcommands and subcommand groups used by the slash command.
+     */
+    getSubcommandElements(): (SlashCommandSubcommandBuilder | SlashCommandSubcommandGroupBuilder | SubcommandElement)[];
 
     /**
      * This method is used to get the full metadata for the command.
