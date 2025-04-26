@@ -135,7 +135,7 @@ export class SlashCommandRateLimitProxy implements SlashCommand {
      */
     public async checkUsability(interaction: ChatInputCommandInteraction): Promise<void> {
         // Check before if there's anything else stopping it from running
-        this.command.checkUsability(interaction);
+        await this.command.checkUsability(interaction);
 
         // if the trigger is valid, then check for the rate limit
         if(await this.rateLimiter.incrementAndCheckRateLimit(interaction.client.user.id)) {

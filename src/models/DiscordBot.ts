@@ -420,9 +420,9 @@ class DiscordBot {
 
                         // Log the command error
                         Logger.error(LogMessageTemplates.error.command, err);
-                        
-                        // Respond to the commadn with the error response
-                        await interaction.followUp({
+
+                        // get the command error info for discord response
+                        let response: InteractionReplyOptions = {
                             flags: (command.getDeferType() == CommandDeferType.HIDDEN) ? "Ephemeral" : undefined, // maintain the defer type of the command
                             embeds: [
                                 new EmbedBuilder({
@@ -431,7 +431,14 @@ class DiscordBot {
                                 })
                             ],
                             withResponse: !(interaction.deferred || interaction.replied)
-                        });
+                        };
+
+                        // Respond properly to the command with the error response
+                        if(!interaction.deferred && !interaction.replied) {
+                            await interaction.reply(response);
+                        } else {
+                            await interaction.followUp(response);
+                        }
                     } else {
                         // if any other error, propagate the error
                         throw err;

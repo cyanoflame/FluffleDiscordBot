@@ -130,14 +130,15 @@ export class SlashCommandPermissionProxy implements SlashCommand {
         if(interaction.channel instanceof GuildChannel || interaction.channel instanceof ThreadChannel) {
             // get user permissions
             let userPermissions = interaction.channel!.permissionsFor(interaction.client.user)
-            if(!(userPermissions && userPermissions.has(this.requiredClientPermissions))) {
+            if(userPermissions && userPermissions.has(this.requiredClientPermissions)) {
                 // Permissions are good -- Check everything else for the command
-                this.command.checkUsability(interaction);
+                await this.command.checkUsability(interaction);
                 // don't need to check anythign else
                 return;
             } else {
                 // Throw an error because the user permissions didn't match
                 throw new CommandError(
+                    "Cannot perform command: missing permissions: " +
                     this.requiredClientPermissions
                     .map(permission => `**${permission}**`) // TODO: Language support for this (instead of using enum map to function)
                     .join(', ')
