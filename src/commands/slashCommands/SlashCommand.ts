@@ -52,17 +52,15 @@ export interface SlashCommand extends Command {
     getIsNSFW(): boolean;
 
     /**
-     * Returns a list of options for the command. If the options are autocomplete options, they should be added 
-     * here as well.
+     * 'Arguments' is a superset of 'options' that also includes subcommands as a part of them. This
+     * returns a list of options for the command. These options could also be SUBCOMMAND GROUPS and 
+     * SUBCOMMANDS, as they are all considered different options in the command.
+     * Options can be constructed normally through their builders. If autocomplete is desired for an 
+     * option, an Autocomplete option could also be used. Subcommands each have their own isolated 
+     * execution in addition to the main command execution to make it easier to split/reference them.
      * @returns list of the options for the command, both autofill and not.
      */
-    getOptions(): (ApplicationCommandOptionBase | AutocompleteOption)[];
-
-    /**
-     * Returns the collection of subcommands and subcommand groups used by the slash command.
-     * @returns the collection of subcommands and subcommand groups used by the slash command.
-     */
-    getSubcommandElements(): (SlashCommandSubcommandBuilder | SlashCommandSubcommandGroupBuilder | SubcommandElement)[];
+    getArguments(): (ApplicationCommandOptionBase | AutocompleteOption | SlashCommandSubcommandBuilder | SlashCommandSubcommandGroupBuilder | SubcommandElement)[];
 
     /**
      * This method is used to get the full metadata for the command.

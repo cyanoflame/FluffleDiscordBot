@@ -95,25 +95,64 @@ export abstract class AbstractSlashCommand implements SlashCommand {
         return false;
     }
 
-    // public getArguments
-
     /**
-     * Returns a list of options for the command. If the options are autocomplete options, they should be added 
-     * here as well.
+     * 'Arguments' is a superset of 'options' that also includes subcommands as a part of them. This
+     * returns a list of options for the command. These options could also be SUBCOMMAND GROUPS and 
+     * SUBCOMMANDS, as they are all considered different options in the command.
+     * Options can be constructed normally through their builders. If autocomplete is desired for an 
+     * option, an Autocomplete option could also be used. Subcommands each have their own isolated 
+     * execution in addition to the main command execution to make it easier to split/reference them.
      * @returns list of the options for the command, both autofill and not.
      */
-    public getOptions(): (ApplicationCommandOptionBase | AutocompleteOption)[] {
+    public getArguments(): (ApplicationCommandOptionBase | AutocompleteOption | SlashCommandSubcommandBuilder | SlashCommandSubcommandGroupBuilder | SubcommandElement)[] {
         // default result if not overridden
         return [];
     }
 
     /**
-     * Returns the collection of subcommands and subcommand groups used by the slash command.
-     * @returns the collection of subcommands and subcommand groups used by the slash command.
+     * Private helper method used to retrieve the non-subcommand options from a command.
+     * Not recommended to be used to get options for a command (use the option name instead if possible).
+     * @returns The non-cubcommand options of a command.
      */
-    public getSubcommandElements(): (SlashCommandSubcommandBuilder | SlashCommandSubcommandGroupBuilder | SubcommandElement)[] {
-        // default result if not overridden
-        return [];
+    protected getOptions(): (ApplicationCommandOptionBase | AutocompleteOption)[] {
+        return this.getArguments().filter(option => {
+            if(option instanceof SlashCommandSubcommandBuilder 
+                || option instanceof SlashCommandSubcommandGroupBuilder
+                || option instanceof Subcommand
+                || option instanceof SubcommandGroup
+            ) {
+                return false;
+            }
+            return true;
+        }) as (ApplicationCommandOptionBase | AutocompleteOption) [];
+    }
+
+    /**
+     * This is used to get the name of an option at the option index. Option indicies are not affected by 
+     * the
+     * Not recommended to be used to get options for a command (use the option name instead if possible).
+     * @param index 
+     * @returns 
+     */
+    protected getOptionNameAtOptionIndex(index: number): string | undefined {
+        return this.options.getOptionNameAtOptionIndex(index);
+    }
+
+    /**
+     * Returns just the subcommand elements of a slash command.
+     * @returns just the subcommand elements of a slash command.
+     */
+    protected getSubcommandElements(): (SlashCommandSubcommandBuilder | SlashCommandSubcommandGroupBuilder | SubcommandElement)[] {
+        return this.getArguments().filter(option => {
+            if(option instanceof SlashCommandSubcommandBuilder 
+                || option instanceof SlashCommandSubcommandGroupBuilder
+                || option instanceof Subcommand
+                || option instanceof SubcommandGroup
+            ) {
+                return true;
+            }
+            return false;
+        }) as (SlashCommandSubcommandBuilder | SlashCommandSubcommandGroupBuilder | SubcommandElement)[];
     }
 
     /** This map stores all of the subcommand features used by the slash command */

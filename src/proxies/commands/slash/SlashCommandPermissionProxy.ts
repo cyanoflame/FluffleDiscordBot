@@ -1,9 +1,7 @@
-import type { ApplicationCommandOptionBase, ApplicationCommandOptionChoiceData, AutocompleteInteraction, ChatInputCommandInteraction, Client, InteractionContextType, LocalizationMap, Permissions, RESTPostAPIChatInputApplicationCommandsJSONBody, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder } from "discord.js";
+import { GuildChannel, ThreadChannel, type ApplicationCommandOptionBase, type ApplicationCommandOptionChoiceData, type AutocompleteInteraction, type ChatInputCommandInteraction, type Client, type CommandInteraction, type InteractionContextType, type LocalizationMap, type Permissions, type PermissionsString, type RESTPostAPIChatInputApplicationCommandsJSONBody, type SlashCommandSubcommandBuilder, type SlashCommandSubcommandGroupBuilder } from "discord.js";
 import type { CommandDeferType } from "../../../commands/Command";
 import type { EventData } from "../../../models/eventData";
 import type { AutocompleteOption } from "../../../commands/slashCommands/components/autocomplete/AutocompleteOption";
-import { RateLimiter } from "../../../utils/RateLimiter";
-import type { RateLimiterAbstract } from "rate-limiter-flexible";
 import { Logger } from '../../../services/logger'
 import LogMessageTemplates from "../../../../lang/logMessageTemplates.json"
 import { CommandError } from '../../../commands/CommandError'
@@ -11,27 +9,23 @@ import type { SlashCommand } from "../../../commands/slashCommands/SlashCommand"
 import type { SubcommandElement } from "../../../commands/slashCommands/components/SubcommandElement";
 
 /**
- * This proxy class is used to proxy to a SlashCommand to apply a rate limit to one when it needs to execute.
+ * This class serves as a base for a simple command that only checks against permissions to see if it 
+ * can run. The permissions should be established in the getRequiredClientPermissions() in the child class.
  */
-export class SlashCommandRateLimitProxy implements SlashCommand {
-    /** The rate limiter used for the class */
-    private rateLimiter: RateLimiter;
-
+export class SlashCommandPermissionProxy implements SlashCommand {
     /** The slash command being proxied */
     private command: SlashCommand;
 
-    /**
-     * Constructs a rate limit proxy for a Slash Command.
-     * @param rateLimiter Either a reference to a rate limiter to use, or an object with the details make a new rate limiter, such that:
-     * rateLimitAmount - The amount of requests that can be made within an interval before limiting the rate ; and rateLimitInterval - The 
-     * time that a the amount of requests can be made in before triggering a rate limit,
-     * @param command The slash command object that is being rate limited.
-     */
-    constructor(rateLimiter: {rateLimitAmount: number, rateLimitInterval: number} | RateLimiterAbstract, command: SlashCommand) {
-        // Create the rate limiter
-        this.rateLimiter = new RateLimiter(rateLimiter);
+    /** The permissions required to use the command. */
+    private requiredClientPermissions: PermissionsString[];
 
-        // Store the command
+    /**
+     * Creates the proxy with the permissions and the proxied command the permissions are applied to.
+     * @param permissions The permissions to apply to the command.
+     * @param command The command being proxied by permissions.
+     */
+    constructor(permissions: PermissionsString[], command: SlashCommand) {
+        this.requiredClientPermissions = permissions;
         this.command = command;
     }
 
@@ -126,32 +120,32 @@ export class SlashCommandRateLimitProxy implements SlashCommand {
     }
 
     /**
-     * This method will perform the check for the rate limit on the command. If it succeeds, the user is not rate 
-     * limited and it will not do anything. If it fails and user is rate limited, it will throw a CommandError mentioning 
-     * such. It checks for the rate limit AFTER other checks are made for the command so it only rate limits users successfully
-     * using it.
+     * This is the method used to check whether or not the user has the permissions to run the command or not. If the command cannot be 
+     * run, a CommandError should be thrown stating the reason it will not run. This error will be returned to 
      * @param interaction The command interaction being run.
-     * @throws CommandError if the command is found to be unable to run.
+     * @throws CommandError with the permissions not met by the user running the command.
      */
     public async checkUsability(interaction: ChatInputCommandInteraction): Promise<void> {
-        // Check before if there's anything else stopping it from running
-        this.command.checkUsability(interaction);
-
-        // if the trigger is valid, then check for the rate limit
-        if(await this.rateLimiter.incrementAndCheckRateLimit(interaction.client.user.id)) {
-            // log the rate limit hit
-            Logger.error(LogMessageTemplates.error.userCommandRateLimit
-                .replaceAll('{USER_TAG}', interaction.client.user.tag)
-                .replaceAll('{USER_ID}', interaction.client.user.id)
-                .replaceAll('{COMMAND_NAME}', this.getName())
-            )
-
-            // if the user is rate limited, do NOT execute the trigger
-            // Throw an error because the user permissions didn't match
-            throw new CommandError(
-                // TODO: Language support for this
-                `You can only run this command ${this.rateLimiter.getRateLimitAmount()} time(s) every ${this.rateLimiter.getRateLimitInterval()} second(s). Please wait before attempting this command again.`
-            )
+        // check for the proper permissions
+        if(interaction.channel instanceof GuildChannel || interaction.channel instanceof ThreadChannel) {
+            // get user permissions
+            let userPermissions = interaction.channel!.permissionsFor(interaction.client.user)
+            if(!(userPermissions && userPermissions.has(this.requiredClientPermissions))) {
+                // Permissions are good -- Check everything else for the command
+                this.command.checkUsability(interaction);
+                // don't need to check anythign else
+                return;
+            } else {
+                // Throw an error because the user permissions didn't match
+                throw new CommandError(
+                    this.requiredClientPermissions
+                    .map(permission => `**${permission}**`) // TODO: Language support for this (instead of using enum map to function)
+                    .join(', ')
+                )
+            }
+        } else {
+            // Throw an error because invalid channel type to run commands in
+            throw new CommandError("Command cannot be run in channel type") // TODO: Language support for this
         }
     }
 

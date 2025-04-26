@@ -10,6 +10,7 @@ import { MessageTriggerRateLimitProxy } from "./proxies/messageTriggers/MessageT
 import { DevCommand } from "./commands/slashCommands/commands/dev/DevCommand"
 import { SlashCommandRateLimitProxy } from "./proxies/commands/slash/SlashCommandRateLimitProxy"
 import { TestCommand } from "./commands/slashCommands/commands/test/TestCommand"
+import { SlashCommandPermissionProxy } from "./proxies/commands/slash/SlashCommandPermissionProxy"
 
 /**
  * This is the function used to define/create the discord bot used by the program.
@@ -72,12 +73,12 @@ export async function defineBot(): Promise<DiscordBot> {
                 rateLimitAmount: 3,
                 rateLimitInterval: 5
             },
-        //     new SlashCommandPermissionProxy(
-                // [],
+            new SlashCommandPermissionProxy(
+                ["Administrator"],
                 new DevCommand([
                     process.env.DEV_USER_ID ?? "undefined"
                 ])
-            // )
+            )
         )
     );
 
@@ -87,12 +88,12 @@ export async function defineBot(): Promise<DiscordBot> {
                 rateLimitAmount: 3,
                 rateLimitInterval: 5
             },
-        //     new SlashCommandPermissionProxy(
-                // [],
+            new SlashCommandPermissionProxy(
+                ["Administrator"],
                 new TestCommand([
                     process.env.DEV_USER_ID ?? "undefined"
                 ])
-            // )
+            )
         )
     );
 

@@ -38,6 +38,15 @@ export abstract class Subcommand implements SubcommandElement {
      * Returns the name localizations for different languages, or null if there is none.
      * @returns LocalizationMap for the name localizations or null if there is none.
      */
+    public getNameLocalization(): LocalizationMap | null {
+        // default result if not overridden
+        return null;
+    }
+
+    /**
+     * Returns the name localizations for different languages, or null if there is none.
+     * @returns LocalizationMap for the name localizations or null if there is none.
+     */
     public getNameLocalizations(): LocalizationMap | null {
         // default result if not overridden
         return null;

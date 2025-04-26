@@ -7,6 +7,8 @@ import type { EventData } from "../../../models/eventData";
  * one Subcommand as a part of its collection which it can propagate the functionality to.
  */
 export interface SubcommandElement {
+    // name: string;
+
     /**
      * Returns the name for the command.
      * @returns the name for the command.

@@ -1,22 +1,15 @@
-import { ApplicationCommandOptionBase, ChatInputCommandInteraction, InteractionContextType, PermissionFlagsBits, PermissionsBitField, SlashCommandBuilder, version, type APIApplicationCommandOptionChoice, type ApplicationCommandOptionChoiceData, type AutocompleteFocusedOption, type AutocompleteInteraction, type Client, type CommandInteraction, type LocalizationMap, type Permissions, type PermissionsString, type RESTPostAPIChatInputApplicationCommandsJSONBody } from "discord.js";
+import { ApplicationCommandOptionBase, ChatInputCommandInteraction, InteractionContextType, PermissionFlagsBits, PermissionsBitField, SlashCommandBuilder, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder, version, type APIApplicationCommandOptionChoice, type ApplicationCommandOptionChoiceData, type AutocompleteFocusedOption, type AutocompleteInteraction, type Client, type CommandInteraction, type LocalizationMap, type Permissions, type PermissionsString, type RESTPostAPIChatInputApplicationCommandsJSONBody } from "discord.js";
 import { AbstractSlashCommand } from "../../AbstractSlashCommand";
 import { CommandDeferType } from "../../../Command";
 import type { EventData } from "../../../../models/eventData";
 import { CommandError } from "../../../CommandError";
 import { hostname } from "os"
 import { versionMajorMinor } from "typescript";
-import { AutocompleteStringOption } from "../../components/autocomplete/AutocompleteStringOption";
 import { heapStats } from "bun:jsc";
-
-/**
- * This enum establishes a common set of values that could be returned from the choices.
- */
-export enum DevInfoChoices {
-    ALL = "all",
-    SYSTEM = "system",
-    ENVIRONMENT = "environment",
-    BOT = "bot"
-};
+import type { AutocompleteOption } from "../../components/autocomplete/AutocompleteOption";
+import type { SubcommandElement } from "../../components/SubcommandElement";
+import { infotypeOption } from "./options/infotype";
+import { DevInfoChoice } from "./DevChoicesEnum";
 
 /**
  * This command is used to show statistics to the bot devs when they want to use it.
@@ -114,32 +107,11 @@ export class DevCommand extends AbstractSlashCommand {
      * here as well.
      * @returns list of the options for the command, both autofill and not.
      */
-    public override getOptions(): ApplicationCommandOptionBase[] {
+    public override getArguments(): (ApplicationCommandOptionBase | AutocompleteOption | SlashCommandSubcommandBuilder | SlashCommandSubcommandGroupBuilder | SubcommandElement)[] {
         return [
-            // new InfoTypeOption()
-            new AutocompleteStringOption()
-                .setName("infotype")
-                .setDescription("Get the specific type of information")
-                .setRequired(true)
-                .setAutocompleteChoiceFunction(this.infoTypeAutocompleteFunction)
+            infotypeOption
+                // .setAutocompleteChoiceFunction(this.infoTypeAutocompleteFunction)
         ]
-    }
-
-    /**
-     * This is the method used to get the the choices for an autocomplete interaction.
-     * @param interaction The autocomplete interaction that choices need to be responded to.
-     */
-    // public async getChoices(interaction: AutocompleteInteraction): Promise<APIApplicationCommandOptionChoice[]> {
-    private async infoTypeAutocompleteFunction(interaction: AutocompleteInteraction): Promise<APIApplicationCommandOptionChoice<DevInfoChoices>[]> {
-        const focusedOption = interaction.options.getFocused(true);
-        let choices = [
-            {name: "all", value: DevInfoChoices.ALL},
-            {name: "system", value: DevInfoChoices.SYSTEM},
-            {name: "environment", value: DevInfoChoices.ENVIRONMENT},
-            {name: "bot", value: DevInfoChoices.BOT}
-        ];
-        // Get the ones that are closest to what's typed already
-        return choices.filter(choice => choice.value.startsWith(focusedOption.value));
     }
 
     /**
@@ -169,26 +141,29 @@ export class DevCommand extends AbstractSlashCommand {
         //     }
         // });
 
-        let infoType = interaction.options.getString(this.getOptions()[0].name);
+        // get option by name --> pass in the option name
+        // let infoType = interaction.options.getString(this.getOptions()[0]!.name); // Not recommended
+        // let infoType = interaction.options.getString(this.getOptionNameAtOptionIndex(0)!); // Not recommended
+        let infoType = interaction.options.getString(infotypeOption.name); // Recommended
 
         let outStr = "";
 
         switch(infoType) {
-            case(DevInfoChoices.ALL): {
+            case(DevInfoChoice.ALL): {
                 outStr += this.getSystemInfo();
                 outStr += this.getEnvironmentInfo();
                 outStr += this.getBotInfo(interaction);
                 break;
             }
-            case(DevInfoChoices.SYSTEM): {
+            case(DevInfoChoice.SYSTEM): {
                 outStr += this.getSystemInfo();
                 break;
             }
-            case(DevInfoChoices.ENVIRONMENT): {
+            case(DevInfoChoice.ENVIRONMENT): {
                 outStr += this.getEnvironmentInfo();
                 break;
             }
-            case(DevInfoChoices.BOT): {
+            case(DevInfoChoice.BOT): {
                 outStr += this.getBotInfo(interaction);
                 break;
             }

@@ -165,6 +165,26 @@ export class CommandOptionCollection {
     }
 
     /**
+     * Used to quickly get the name of an option by its index since being added.
+     * This method exists for convenience. The option is better referred to by name.
+     * @param index The index of the option whose name to retrieve.
+     * The name of the option at the index.
+     */
+    public getOptionNameAtOptionIndex(index: number): string | undefined {
+        if(index < this.options.size) {
+            let indexCount = 0;
+            for(const option of this.options.keys()) {
+                if(indexCount == index) {
+                    return option;
+                } else {
+                    indexCount += 1;
+                }
+            }
+        }
+        return undefined;
+    }
+
+    /**
      * Returns autocomplete choice data for the command or undefined if there is none.
      * @param interaction The interaction to get the autocomplete data for.
      * @returns The autocomplete data for the interaction option or undefined if there is none.
