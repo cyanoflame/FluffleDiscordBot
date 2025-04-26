@@ -6,6 +6,7 @@ import { CommandError } from "../../../CommandError";
 import { hostname } from "os"
 import { versionMajorMinor } from "typescript";
 import { AutocompleteStringOption } from "../../components/autocomplete/AutocompleteStringOption";
+import { heapStats } from "bun:jsc";
 
 /**
  * This enum establishes a common set of values that could be returned from the choices.
@@ -203,11 +204,12 @@ export class DevCommand extends AbstractSlashCommand {
      */
     private getSystemInfo(): string {
         let memory = process.memoryUsage();
+        let heapInfo = heapStats();
 
         let outStr = "System Info:\n";
         outStr += `**RSS**: ${memory.rss} bytes\n`; // todo: add per server and per shard
-        outStr += `**Heap Total**: ${memory.heapTotal} bytes\n`;
-        outStr += `**Heap Used**: ${memory.heapUsed} bytes -- (${(memory.heapUsed/memory.heapTotal) * 100.0} %)\n`;
+        outStr += `**Heap Total**: ${heapInfo.heapCapacity} bytes\n`;
+        outStr += `**Heap Used**: ${heapInfo.heapSize} bytes -- (${(heapInfo.heapSize/heapInfo.heapCapacity) * 100.0} %)\n`;
         outStr += `**Hostname**: ${hostname()} bytes\n`;
 
         return outStr;
