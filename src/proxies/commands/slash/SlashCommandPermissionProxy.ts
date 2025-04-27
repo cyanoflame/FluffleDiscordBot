@@ -136,10 +136,19 @@ export class SlashCommandPermissionProxy implements SlashCommand {
                 // don't need to check anythign else
                 return;
             } else {
+                // All the missing permissions
+                let missingPerms = this.requiredClientPermissions;
+                // Get
+                if(userPermissions) {
+                    // Get the missing permissions -- check each one individually to see if the user has it
+                    missingPerms = missingPerms.filter(requiredPermission => 
+                        !userPermissions.has(requiredPermission)
+                    )
+                }
                 // Throw an error because the user permissions didn't match
                 throw new CommandError(
-                    "Cannot perform command: missing permissions: " +
-                    this.requiredClientPermissions
+                    "Missing permissions to perform command: " +
+                    missingPerms
                     .map(permission => `**${permission}**`) // TODO: Language support for this (instead of using enum map to function)
                     .join(', ')
                 )
