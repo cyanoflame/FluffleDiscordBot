@@ -1,18 +1,13 @@
 import {
     ApplicationCommandType,
-    Client,
     ContextMenuCommandBuilder,
-    MessageContextMenuCommandInteraction,
 } from 'discord.js';
-
-import { EventData } from '../../../models/eventData';
-import { ContextMenuCommand } from '../ContextMenuCommand';
+import { AbstractContextMenuCommand } from '../AbstractContextMenuCommand';
 
 /**
  * This class defines the structure of a command run from the context menu of a message.
  */
-export abstract class MessageContextMenuCommand extends ContextMenuCommand {
-
+export abstract class MessageContextMenuCommand extends AbstractContextMenuCommand {
     /**
      * This method is used to build the metadata for the command, and also establish the different options.
      * The normal method is overridden so that this one can get that data, and also specify the type.
@@ -28,21 +23,4 @@ export abstract class MessageContextMenuCommand extends ContextMenuCommand {
         // Return the build data
         return contextMenuCommandData;
     }
-
-    /**
-     * This is the method used to check whether or not the command can be run by the user. If the command cannot be 
-     * run, a CommandError should be thrown stating the reason it will not run. This error will be returned to 
-     * @param interaction The interaction with the message context for the command being run.
-     * @throws CommandError if the command is found to be unable to run.
-     */
-    abstract override checkUsability(interaction: MessageContextMenuCommandInteraction): Promise<void>;
-
-    /**
-     * This function will execute whenever the command is called.
-     * @param client The Discord client to run any commands to interact with Discord.
-     * @param interaction The interaction with the message context for the command being run.
-     * @param data The data related to the event, passed in from the EventDataService.
-     */
-    abstract override execute(client: Client, interaction: MessageContextMenuCommandInteraction, data: EventData): Promise<void>
-    
 }

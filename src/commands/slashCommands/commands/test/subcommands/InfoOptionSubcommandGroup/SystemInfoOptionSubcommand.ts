@@ -69,7 +69,10 @@ export class SystemInfoOptionSubcommand extends Subcommand {
      */
     public override async execute(client: Client, interaction: ChatInputCommandInteraction, data: EventData): Promise<void> {
         // Reply
-        interaction.reply(this.getSystemInfo());
+        await interaction.reply({
+            flags: "Ephemeral",
+            content: this.getSystemInfo(),
+        });
     }
 
 }

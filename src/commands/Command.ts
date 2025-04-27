@@ -7,6 +7,7 @@ import type {
     RESTPostAPIApplicationCommandsJSONBody,
 } from 'discord.js';
 import type { EventData } from '../models/eventData';
+import type { CommandDeferType } from './CommandDeferType';
 
 /**
  * This class defines the structure used by all commands and command types.
@@ -49,11 +50,15 @@ export interface Command {
      * response will take longer than that, the response will need to be deferred, sending a 
      * message "<app/bot> is thinking..." as a first response. This gives the response a 15
      * minute window to actually respond.
+     * 
+     * If using HIDDEN or PUBLIC, the interaction must be responded to with interaction.followUp()
+     * If using NONE, the interaction must be responded to with interaction.followUp()
+     * 
      * See https://discordjs.guide/slash-commands/response-methods.html#deferred-responses
      * 
-     * @returns If the command needs to be deferred, then should return a CommandDeferType. If not, it should return undefined.
+     * @returns If the command needs to be deferred, then should return a CommandDeferType.
      */
-    getDeferType(): CommandDeferType | undefined;
+    getDeferType(): CommandDeferType;
 
     /**
      * This is the method used to check whether or not the command can be run by the user. If the command cannot be 
@@ -70,16 +75,4 @@ export interface Command {
      * @param data The data related to the event, passed in from the EventDataService.
      */
     execute(client: Client, interaction: CommandInteraction, data: EventData): Promise<void>;
-    
-}
-
-/**
- * Once the command is executed and the response takes longer than 3 seconds, the response will need to be defferred.
- * The bot will defer the interaction such that it will show a message like '<bot> is thinking...' similar to '<user> is typing...'
- * PUBLIC: For this option, anyone can see whether or not the bot is thinking.
- * HIDDEN: For this option, only the command user can see whether or not the bot is thinking.
- */
-export enum CommandDeferType {
-    PUBLIC = 'PUBLIC',
-    HIDDEN = 'HIDDEN'
 }

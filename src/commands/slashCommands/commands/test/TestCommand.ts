@@ -1,6 +1,5 @@
 import { ApplicationCommandOptionBase, ChatInputCommandInteraction, InteractionContextType, PermissionFlagsBits, PermissionsBitField, SlashCommandBuilder, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder, version, type APIApplicationCommandOptionChoice, type ApplicationCommandOptionChoiceData, type AutocompleteFocusedOption, type AutocompleteInteraction, type Client, type CommandInteraction, type LocalizationMap, type Permissions, type PermissionsString, type RESTPostAPIChatInputApplicationCommandsJSONBody } from "discord.js";
 import { AbstractSlashCommand } from "../../AbstractSlashCommand";
-import { CommandDeferType } from "../../../Command";
 import type { EventData } from "../../../../models/eventData";
 import { CommandError } from "../../../CommandError";
 import { hostname } from "os"
@@ -12,6 +11,7 @@ import { AllInfoOptionSubcommand } from "./subcommands/InfoOptionSubcommandGroup
 import { BotInfoOptionSubcommand } from "./subcommands/InfoOptionSubcommandGroup/BotInfoOptionSubcommand";
 import { SystemInfoOptionSubcommand } from "./subcommands/InfoOptionSubcommandGroup/SystemInfoOptionSubcommand";
 import { EnvironmentInfoOptionSubcommand } from "./subcommands/InfoOptionSubcommandGroup/EnvironmentInfoOptionSubcommand";
+import { CommandDeferType } from "../../../CommandDeferType";
 
 // /**
 //  * This enum establishes a common set of values that could be returned from the choices.
@@ -45,12 +45,15 @@ export class TestCommand extends AbstractSlashCommand {
      * response will take longer than that, the response will need to be deferred, sending a 
      * message "<app/bot> is thinking..." as a first response. This gives the response a 15
      * minute window to actually respond.
+     * 
+     * Since NONE is used, the interaction must be responded to with interaction.reply()
+     * 
      * See https://discordjs.guide/slash-commands/response-methods.html#deferred-responses
      * 
-     * @returns If the command needs to be deferred, then should return a CommandDeferType. If not, it should return undefined.
+     * @returns If the command needs to be deferred, then should return a CommandDeferType.
      */
-    public override getDeferType(): CommandDeferType | undefined {
-        return CommandDeferType.HIDDEN;
+    public override getDeferType(): CommandDeferType {
+        return CommandDeferType.NONE;
     }
 
     /**

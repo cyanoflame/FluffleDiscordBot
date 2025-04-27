@@ -1,6 +1,5 @@
 import { ApplicationCommandOptionBase, ChatInputCommandInteraction, InteractionContextType, PermissionFlagsBits, PermissionsBitField, SlashCommandBuilder, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder, version, type APIApplicationCommandOptionChoice, type ApplicationCommandOptionChoiceData, type AutocompleteFocusedOption, type AutocompleteInteraction, type Client, type CommandInteraction, type LocalizationMap, type Permissions, type PermissionsString, type RESTPostAPIChatInputApplicationCommandsJSONBody } from "discord.js";
 import { AbstractSlashCommand } from "../../AbstractSlashCommand";
-import { CommandDeferType } from "../../../Command";
 import type { EventData } from "../../../../models/eventData";
 import { CommandError } from "../../../CommandError";
 import { hostname } from "os"
@@ -10,6 +9,7 @@ import type { AutocompleteOption } from "../../components/autocomplete/Autocompl
 import type { SubcommandElement } from "../../components/SubcommandElement";
 import { infotypeOption } from "./options/infotype";
 import { DevInfoChoice } from "./DevChoicesEnum";
+import { CommandDeferType } from "../../../CommandDeferType";
 
 /**
  * This command is used to show statistics to the bot devs when they want to use it.
@@ -33,11 +33,14 @@ export class DevCommand extends AbstractSlashCommand {
      * response will take longer than that, the response will need to be deferred, sending a 
      * message "<app/bot> is thinking..." as a first response. This gives the response a 15
      * minute window to actually respond.
+     * 
+     * Since HIDDEN is used, the interaction must be responded to with interaction.followUp()
+     * 
      * See https://discordjs.guide/slash-commands/response-methods.html#deferred-responses
      * 
-     * @returns If the command needs to be deferred, then should return a CommandDeferType. If not, it should return undefined.
+     * @returns If the command needs to be deferred, then should return a CommandDeferType.
      */
-    public override getDeferType(): CommandDeferType | undefined {
+    public override getDeferType(): CommandDeferType {
         return CommandDeferType.HIDDEN;
     }
 
@@ -170,7 +173,7 @@ export class DevCommand extends AbstractSlashCommand {
         };
 
         // Reply
-        await interaction.reply(outStr);
+        await interaction.followUp(outStr); // must use .followUp() when a defer type is set
     }
 
     /**
@@ -181,7 +184,7 @@ export class DevCommand extends AbstractSlashCommand {
         let memory = process.memoryUsage();
         let heapInfo = heapStats();
 
-        let outStr = "System Info:\n";
+        let outStr = "# System Info:\n";
         outStr += `**RSS**: ${memory.rss} bytes\n`; // todo: add per server and per shard
         outStr += `**Heap Total**: ${heapInfo.heapCapacity} bytes\n`;
         outStr += `**Heap Used**: ${heapInfo.heapSize} bytes -- (${(heapInfo.heapSize/heapInfo.heapCapacity) * 100.0} %)\n`;
@@ -195,7 +198,7 @@ export class DevCommand extends AbstractSlashCommand {
      * @returns String with info regarding the environment the bot is running in.
      */
     private getEnvironmentInfo(): string {
-        let outStr = "Environment Info:\n";
+        let outStr = "# Environment Info:\n";
 
         outStr += `**Bun Version**: ${Bun.version}\n`;
         outStr += `**Typescript Version**: ${versionMajorMinor}\n`;
@@ -210,7 +213,7 @@ export class DevCommand extends AbstractSlashCommand {
      * @returns String with info regarding the bot itself and its current state.
      */
     private getBotInfo(interaction: ChatInputCommandInteraction): string {
-        let outStr = "Bot Info:\n";
+        let outStr = "# Bot Info:\n";
 
         outStr += `**Guild ID**: ${interaction.guild?.id ?? "Undefined"}\n`;
         outStr += `**Bot ID**: ${interaction.client.user?.id ?? "Undefined"}\n`;

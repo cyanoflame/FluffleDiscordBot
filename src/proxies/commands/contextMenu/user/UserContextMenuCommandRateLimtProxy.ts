@@ -1,5 +1,4 @@
 import type { LocalizationMap, InteractionContextType, Permissions, ApplicationIntegrationType, Client, UserContextMenuCommandInteraction } from "discord.js";
-import type { CommandDeferType } from "../../../../commands/Command";
 import type { EventData } from "../../../../models/eventData";
 import { RateLimiter } from "../../../../utils/RateLimiter";
 import type { RateLimiterAbstract } from "rate-limiter-flexible";
@@ -7,6 +6,7 @@ import { Logger } from '../../../../services/logger'
 import LogMessageTemplates from "../../../../../lang/logMessageTemplates.json"
 import { CommandError } from '../../../../commands/CommandError'
 import { UserContextMenuCommand } from "../../../../commands/contextMenuCommands/user/UserContextMenuCommand";
+import type { CommandDeferType } from "../../../../commands/CommandDeferType";
 
 /**
  * This proxy class is used to proxy to a UserContextMenuCommand to apply a rate limit to one when it needs to execute.
@@ -81,7 +81,7 @@ export class UserContextMenuCommandRateLimitProxy extends UserContextMenuCommand
      * Returns the proxied command's defer type.
      * @returns the proxied command's defer type.
      */
-    public override getDeferType(): CommandDeferType | undefined {
+    public override getDeferType(): CommandDeferType {
         return this.command.getDeferType();
     }
 

@@ -1,4 +1,4 @@
-import type { ChatInputCommandInteraction, Client, LocalizationMap } from "discord.js";
+import { MessagePayload, type ChatInputCommandInteraction, type Client, type LocalizationMap } from "discord.js";
 import { Subcommand } from "../../../../components/Subcommand";
 import type { EventData } from "../../../../../../models/eventData";
 
@@ -76,7 +76,10 @@ export class BotInfoOptionSubcommand extends Subcommand {
      */
     public override async execute(client: Client, interaction: ChatInputCommandInteraction, data: EventData): Promise<void> {
         // Reply
-        interaction.reply(this.getBotInfo(interaction));
+        await interaction.reply({
+            flags: "Ephemeral",
+            content: this.getBotInfo(interaction),
+        });
     }
 
 }

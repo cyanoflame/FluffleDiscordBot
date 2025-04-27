@@ -4,7 +4,6 @@ import {
     ChatInputCommandInteraction,
     Client,
     InteractionContextType,
-    Locale,
     SlashCommandBuilder,
     SlashCommandSubcommandBuilder,
     SlashCommandSubcommandGroupBuilder,
@@ -15,13 +14,13 @@ import {
 } from 'discord.js';
 
 import { EventData } from '../../models/eventData';
-import { CommandDeferType } from '../Command';
 import type { SlashCommand } from './SlashCommand';
 import type { SubcommandElement } from './components/SubcommandElement';
 import { Subcommand } from './components/Subcommand';
 import { CommandOptionCollection } from './components/CommandOptionCollection';
 import type { AutocompleteOption } from './components/autocomplete/AutocompleteOption';
 import { SubcommandGroup } from './components/SubcommandGroup';
+import { AbstractCommand } from '../AbstractCommand';
 
 /**
  * This class defines the structure of a basic slash command. This class is intended to be 
@@ -29,62 +28,7 @@ import { SubcommandGroup } from './components/SubcommandGroup';
  * overridden, while others only have to be overridden if something other than the default
  * is desired.
  */
-export abstract class AbstractSlashCommand implements SlashCommand {
-    /**
-     * Returns the name for the command.
-     * @returns the name for the command.
-     */
-    abstract getName(): string;
-
-    /**
-     * Returns the name localizations for different languages, or null if there is none.
-     * @returns LocalizationMap for the name localizations or null if there is none.
-     */
-    public getNameLocalizations(): LocalizationMap | null {
-        // default result if not overridden
-        return null;
-    }
-
-    /**
-     * Returns the description of the command.
-     * @returns the description of the command.
-     */
-    public getDescription(): string {
-        // default result if not overridden
-        return "";
-    }
-
-    /**
-     * Returns the description localizations for different languages, or null if there is none.
-     * @returns LocalizationMap for the description localizations or null if there is none.
-     */
-    public getDescriptionLocalizations(): LocalizationMap | null {
-        // default result if not overridden
-        return null;
-    }
-
-    /**
-     * Return the contexts that the command can be run in (servers, dms, group dms).
-     * @returns the contexts that the command can be run in.
-     */
-    public getContexts(): InteractionContextType[] {
-        // default result if not overridden
-        return [
-            InteractionContextType.BotDM,
-            InteractionContextType.Guild,
-            InteractionContextType.PrivateChannel
-        ];
-    }
-
-    /**
-     * Get the permissions required to be able to run the command.
-     * @returns the permissions required to run the command.
-     */
-    public getDefaultMemberPermissions(): Permissions | bigint | number | null | undefined {
-        // default result if not overridden
-        return undefined;
-    }
-
+export abstract class AbstractSlashCommand extends AbstractCommand implements SlashCommand {
     /**
      * Whether or not the command handles nsfw things. If this is true, it can only be used in channels/places where nsfw content 
      * has been enabled.
@@ -165,6 +109,9 @@ export abstract class AbstractSlashCommand implements SlashCommand {
      * This function creates the map for the autocomplete parameters/commands.
      */
     constructor() {
+        // Cosntruct the AbstractCommand parent
+        super();
+
         // Create the subcommand elements map
         this.subcommandElements = new Map<string, SubcommandElement>();
 
@@ -259,7 +206,7 @@ export abstract class AbstractSlashCommand implements SlashCommand {
      * https://discord.com/developers/docs/interactions/application-commands#slash-commands
      * @returns The metadata of the command.
      */
-    public getMetadata(): RESTPostAPIChatInputApplicationCommandsJSONBody {
+    public override getMetadata(): RESTPostAPIChatInputApplicationCommandsJSONBody {
         // Build the command from each of the defined methods
         let slashCommandData = new SlashCommandBuilder()
         .setName(this.getName())
@@ -321,20 +268,6 @@ export abstract class AbstractSlashCommand implements SlashCommand {
         return this.options.autocomplete(interaction);
     }
 
-    /** 
-     * Discord requires a response from a command in 3 seconds or become invalid. If a 
-     * response will take longer than that, the response will need to be deferred, sending a 
-     * message "<app/bot> is thinking..." as a first response. This gives the response a 15
-     * minute window to actually respond.
-     * See https://discordjs.guide/slash-commands/response-methods.html#deferred-responses
-     * 
-     * @returns If the command needs to be deferred, then should return a CommandDeferType. If not, it should return undefined.
-     */
-    public getDeferType(): CommandDeferType | undefined {
-        // default result if not overridden
-        return CommandDeferType.PUBLIC;
-    }
-
     /**
      * This is the method used to check whether or not the command can be run by the user. If the command cannot be 
      * run, a CommandError should be thrown stating the reason it will not run. This error will be returned to 
@@ -386,7 +319,7 @@ export abstract class AbstractSlashCommand implements SlashCommand {
      * @param interaction The interaction causing the command to be triggered.
      * @param data The data related to the event, passed in from the EventDataService.
      */
-    public async execute(client: Client, interaction: ChatInputCommandInteraction, data: EventData): Promise<void> {
+    public override async execute(client: Client, interaction: ChatInputCommandInteraction, data: EventData): Promise<void> {
         // Run anything from the subcommand begin run
         if (this.subcommandElements.size > 0) {
             return this.executeSubcommand(client, interaction, data);

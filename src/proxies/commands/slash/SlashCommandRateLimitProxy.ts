@@ -1,5 +1,4 @@
 import type { ApplicationCommandOptionBase, ApplicationCommandOptionChoiceData, AutocompleteInteraction, ChatInputCommandInteraction, Client, InteractionContextType, LocalizationMap, Permissions, RESTPostAPIChatInputApplicationCommandsJSONBody, SlashCommandSubcommandBuilder, SlashCommandSubcommandGroupBuilder } from "discord.js";
-import type { CommandDeferType } from "../../../commands/Command";
 import type { EventData } from "../../../models/eventData";
 import type { AutocompleteOption } from "../../../commands/slashCommands/components/autocomplete/AutocompleteOption";
 import { RateLimiter } from "../../../utils/RateLimiter";
@@ -9,6 +8,7 @@ import LogMessageTemplates from "../../../../lang/logMessageTemplates.json"
 import { CommandError } from '../../../commands/CommandError'
 import type { SlashCommand } from "../../../commands/slashCommands/SlashCommand";
 import type { SubcommandElement } from "../../../commands/slashCommands/components/SubcommandElement";
+import type { CommandDeferType } from "../../../commands/CommandDeferType";
 
 /**
  * This proxy class is used to proxy to a SlashCommand to apply a rate limit to one when it needs to execute.
@@ -121,7 +121,7 @@ export class SlashCommandRateLimitProxy implements SlashCommand {
      * Returns the proxied command's defer type.
      * @returns the proxied command's defer type.
      */
-    public getDeferType(): CommandDeferType | undefined {
+    public getDeferType(): CommandDeferType {
         return this.command.getDeferType();
     }
 

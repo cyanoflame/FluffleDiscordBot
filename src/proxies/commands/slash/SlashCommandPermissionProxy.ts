@@ -1,5 +1,4 @@
 import { GuildChannel, ThreadChannel, type ApplicationCommandOptionBase, type ApplicationCommandOptionChoiceData, type AutocompleteInteraction, type ChatInputCommandInteraction, type Client, type CommandInteraction, type InteractionContextType, type LocalizationMap, type Permissions, type PermissionsString, type RESTPostAPIChatInputApplicationCommandsJSONBody, type SlashCommandSubcommandBuilder, type SlashCommandSubcommandGroupBuilder } from "discord.js";
-import type { CommandDeferType } from "../../../commands/Command";
 import type { EventData } from "../../../models/eventData";
 import type { AutocompleteOption } from "../../../commands/slashCommands/components/autocomplete/AutocompleteOption";
 import { Logger } from '../../../services/logger'
@@ -7,6 +6,7 @@ import LogMessageTemplates from "../../../../lang/logMessageTemplates.json"
 import { CommandError } from '../../../commands/CommandError'
 import type { SlashCommand } from "../../../commands/slashCommands/SlashCommand";
 import type { SubcommandElement } from "../../../commands/slashCommands/components/SubcommandElement";
+import type { CommandDeferType } from "../../../commands/CommandDeferType";
 
 /**
  * This class serves as a base for a simple command that only checks against permissions to see if it 
@@ -115,7 +115,7 @@ export class SlashCommandPermissionProxy implements SlashCommand {
      * Returns the proxied command's defer type.
      * @returns the proxied command's defer type.
      */
-    public getDeferType(): CommandDeferType | undefined {
+    public getDeferType(): CommandDeferType {
         return this.command.getDeferType();
     }
 

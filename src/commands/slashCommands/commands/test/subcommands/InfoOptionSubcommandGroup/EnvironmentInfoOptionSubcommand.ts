@@ -66,7 +66,10 @@ export class EnvironmentInfoOptionSubcommand extends Subcommand {
      */
     public override async execute(client: Client, interaction: ChatInputCommandInteraction, data: EventData): Promise<void> {
         // Reply
-        interaction.reply(this.getEnvironmentInfo());
+        await interaction.reply({
+            flags: "Ephemeral",
+            content: this.getEnvironmentInfo(),
+        });
     }
 
 }

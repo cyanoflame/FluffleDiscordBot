@@ -35,7 +35,7 @@ import { Logger } from "../services/logger"
 import { PartialUtils } from "../utils/partialUtils"
 import type { MessageTrigger } from "../messageTriggers/MessageTrigger"
 import type { EventDataService } from "../services/eventDataService"
-import { CommandDeferType, type Command } from "../commands/Command"
+import { type Command } from "../commands/Command"
 import type { SlashCommand } from "../commands/slashCommands/SlashCommand"
 import { CommandError } from "../commands/CommandError"
 
@@ -43,6 +43,7 @@ import LogMessageTemplates from "../../lang/logMessageTemplates.json"
 import CommonLanguageElements from "../../lang/common.json"
 import { CommandStore } from "./CommandStore"
 import { DiscordLimits } from "../constants/DiscordLimits"
+import { CommandDeferType } from "../commands/CommandDeferType"
 
 /**
  * This class is used for the
@@ -52,7 +53,7 @@ class DiscordBot {
     private client: Client;
 
     /** Whether or not the bot is connected, setup and ready to work */
-    private ready = false;
+    private ready;
 
     /** The discord bot token */
     private token: string;
@@ -88,10 +89,14 @@ class DiscordBot {
         token: string, 
         eventDataService: EventDataService // WILL BE REMOVED
     ) {
+        // Bot is not ready upon creation
+        this.ready = false;
+
         // Create the discord bot object
-        this.client = new Client(options)
+        this.client = new Client(options);
+
         // Store the bot token
-        this.token = token
+        this.token = token;
 
         // Create the message trigger map
         this.messageTriggers = []
@@ -356,6 +361,10 @@ class DiscordBot {
     private async onCommand(interaction: AutocompleteInteraction | CommandInteraction): Promise<void> {
         // if autocomplete
         if(interaction.isAutocomplete()) {
+            // CANNOT defer autocomplete response -- you only have 3 seconds to respond with choices
+            // if this becomes a problem, cache your choices
+            // interaction.deferResponse(); // see ^^
+
             // Get the command as a slash command
             let command = this.commands.findCommand(interaction.commandName) as SlashCommand;
             if(command) {
@@ -390,10 +399,16 @@ class DiscordBot {
         } else
         if(interaction.isChatInputCommand()) {
             // Get the slash command
-            // let command = this.commands.findSlashCommand(commandParts);
             let command = this.commands.findCommand(interaction.commandName);
-            // if a command was found
+            // if a command was found, do what is needed for it
             if(command) {
+                // immediately defer the command (if specified) to allow 15 min response window (instead of 3 seconds)
+                if(command.getDeferType() != CommandDeferType.NONE) {
+                    await interaction.deferReply({
+                        // Set the command hidden if it was desired
+                        flags: (command.getDeferType() == CommandDeferType.HIDDEN) ? "Ephemeral" : undefined, // maintain the defer type of the command
+                    });
+                }
                 // Check for permissions (this could be imp0lemented as a proxy class as well if necessary)
                 try {
                     // Check whether the command can be used or not
@@ -407,7 +422,7 @@ class DiscordBot {
                     });
 
                     // Check the command permissions for the user
-                    command.execute(this.client, interaction, data);
+                    await command.execute(this.client, interaction, data);
                 } catch(err) {
                     // if the user to run the command inform them why
                     if(err instanceof CommandError) {
@@ -423,7 +438,7 @@ class DiscordBot {
 
                         // get the command error info for discord response
                         let response: InteractionReplyOptions = {
-                            flags: (command.getDeferType() == CommandDeferType.HIDDEN) ? "Ephemeral" : undefined, // maintain the defer type of the command
+                            flags: (command.getDeferType() != CommandDeferType.PUBLIC) ? "Ephemeral" : undefined, // maintain the defer type of the command
                             embeds: [
                                 new EmbedBuilder({
                                     description: err.message,

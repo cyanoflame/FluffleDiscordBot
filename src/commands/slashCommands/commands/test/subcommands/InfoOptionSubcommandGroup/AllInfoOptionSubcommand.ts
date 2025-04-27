@@ -59,7 +59,10 @@ export class AllInfoOptionSubcommand extends Subcommand {
         outStr += new EnvironmentInfoOptionSubcommand().getEnvironmentInfo();
         outStr += new BotInfoOptionSubcommand().getBotInfo(interaction);
 
-        interaction.reply(outStr);
+        await interaction.reply({
+            flags: "Ephemeral",
+            content: outStr,
+        });
     }
 
 }
