@@ -1,7 +1,5 @@
-import type { LocalizationMap, InteractionContextType, Permissions, ApplicationIntegrationType, Client, MessageContextMenuCommandInteraction, RESTPostAPIApplicationCommandsJSONBody } from "discord.js";
+import { type LocalizationMap, type InteractionContextType, type Permissions, type ApplicationIntegrationType, type Client, type MessageContextMenuCommandInteraction, type RESTPostAPIApplicationCommandsJSONBody, type PermissionsString, GuildChannel, ThreadChannel } from "discord.js";
 import type { EventData } from "../../../../models/eventData";
-import { RateLimiter } from "../../../../utils/RateLimiter";
-import type { RateLimiterAbstract } from "rate-limiter-flexible";
 import { Logger } from '../../../../services/logger'
 import LogMessageTemplates from "../../../../../lang/logMessageTemplates.json"
 import { CommandError } from '../../../../commands/CommandError'
@@ -13,23 +11,20 @@ import type { ContextMenuCommand } from "../../../../commands/contextMenuCommand
  * This proxy class is used to proxy to a MessageContextMenuCommand to apply a rate limit to one when it needs to execute.
  */
 export class MessageContextMenuCommandRateLimitProxy implements ContextMenuCommand {
-    
-    /** The rate limiter used for the class */
-    private rateLimiter: RateLimiter;
+    /** The permissions required to use the command. */
+    private requiredClientPermissions: PermissionsString[];
 
     /** The slash command being proxied */
     private command: MessageContextMenuCommand;
 
     /**
-     * Constructs a rate limit proxy for a MessageContextMenu Command.
-     * @param rateLimiter Either a reference to a rate limiter to use, or an object with the details make a new rate limiter, such that:
-     * rateLimitAmount - The amount of requests that can be made within an interval before limiting the rate ; and rateLimitInterval - The 
-     * time that a the amount of requests can be made in before triggering a rate limit,
-     * @param command The message context menu command object that is being rate limited.
+     * Creates the proxy with the permissions and the proxied command the permissions are applied to.
+     * @param permissions The permissions to apply to the command.
+     * @param command The command being proxied by permissions.
      */
-    constructor(rateLimiter: {rateLimitAmount: number, rateLimitInterval: number} | RateLimiterAbstract, command: MessageContextMenuCommand) {
+    constructor(permissions: PermissionsString[], command: MessageContextMenuCommand) {
         // Create the rate limiter
-        this.rateLimiter = new RateLimiter(rateLimiter);
+        this.requiredClientPermissions = permissions;
 
         // Store the command
         this.command = command;
@@ -92,32 +87,42 @@ export class MessageContextMenuCommandRateLimitProxy implements ContextMenuComma
     }
 
     /**
-     * This method will perform the check for the rate limit on the command. If it succeeds, the user is not rate 
-     * limited and it will not do anything. If it fails and user is rate limited, it will throw a CommandError mentioning 
-     * such. It checks for the rate limit AFTER other checks are made for the command so it only rate limits users successfully
-     * using it.
+     * This is the method used to check whether or not the user has the permissions to run the command or not. If the command cannot be 
+     * run, a CommandError should be thrown stating the reason it will not run. This error will be returned to 
      * @param interaction The command interaction being run.
-     * @throws CommandError if the command is found to be unable to run.
+     * @throws CommandError with the permissions not met by the user running the command.
      */
     public async checkUsability(interaction: MessageContextMenuCommandInteraction): Promise<void> {
-        // Check before if there's anything else stopping it from running
-        this.command.checkUsability(interaction);
-
-        // if the trigger is valid, then check for the rate limit
-        if(await this.rateLimiter.incrementAndCheckRateLimit(interaction.client.user.id)) {
-            // log the rate limit hit
-            Logger.error(LogMessageTemplates.error.userCommandRateLimit
-                .replaceAll('{USER_TAG}', interaction.client.user.tag)
-                .replaceAll('{USER_ID}', interaction.client.user.id)
-                .replaceAll('{COMMAND_NAME}', this.getName())
-            )
-
-            // if the message is rate limited, do NOT execute the trigger
-            // Throw an error because the message permissions didn't match
-            throw new CommandError(
-                // TODO: Language support for this
-                `You can only run this command ${this.rateLimiter.getRateLimitAmount()} time(s) every ${this.rateLimiter.getRateLimitInterval()} second(s). Please wait before attempting this command again.`
-            )
+        // check for the proper permissions
+        if(interaction.channel instanceof GuildChannel || interaction.channel instanceof ThreadChannel) {
+            // get user permissions
+            let userPermissions = interaction.channel!.permissionsFor(interaction.client.user)
+            if(userPermissions && userPermissions.has(this.requiredClientPermissions)) {
+                // Permissions are good -- Check everything else for the command
+                await this.command.checkUsability(interaction);
+                // don't need to check anythign else
+                return;
+            } else {
+                // All the missing permissions
+                let missingPerms = this.requiredClientPermissions;
+                // Get
+                if(userPermissions) {
+                    // Get the missing permissions -- check each one individually to see if the user has it
+                    missingPerms = missingPerms.filter(requiredPermission => 
+                        !userPermissions.has(requiredPermission)
+                    )
+                }
+                // Throw an error because the user permissions didn't match
+                throw new CommandError(
+                    "Missing permissions to perform command: " +
+                    missingPerms
+                    .map(permission => `**${permission}**`) // TODO: Language support for this (instead of using enum map to function)
+                    .join(', ')
+                )
+            }
+        } else {
+            // Throw an error because invalid channel type to run commands in
+            throw new CommandError("Command cannot be run in channel type") // TODO: Language support for this
         }
     }
 
