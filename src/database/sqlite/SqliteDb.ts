@@ -229,9 +229,46 @@ export default class SqliteDb {
 
     ///// U /////
 
-    // None
+    // None - since it's either there or not for the current whitelist/blacklist setup //
 
     ///// D /////
 
-    //
+    /**
+     * This is used to remove a whitelisted channel from a guild.
+     * @param channelId the discord id of the channel being removed from the whitelist.
+     * @throws ReferenceError if the DB is not initialized yet.
+     */
+    public removeFromGuildWhitelist(channelId: number): void {
+        if(SqliteDb.db) {
+            // Delete the row
+            SqliteDb.db.query<{guild_id: number}, {channelId: number}>(`
+                DELETE FROM whitelisted_channel WHERE discord_channel_id = channelId RETURNING guild_id;
+            `).get({
+                channelId: channelId
+            });
+            // deleting the channelConfig record will be handled later (when the bot leaves a server)
+        } else {
+            throw dbNotInitializedError;
+        }
+    }
+
+    /**
+     * This is used to remove a blacklisted channel from a guild.
+     * @param channelId the discord id of the channel being removed from the blacklist.
+     * @throws ReferenceError if the DB is not initialized yet.
+     */
+    public removeFromGuildBlacklist(channelId: number): void {
+        if(SqliteDb.db) {
+            // Delete the row
+            SqliteDb.db.query<{guild_id: number}, {channelId: number}>(`
+                DELETE FROM blacklisted_channel WHERE discord_channel_id = channelId RETURNING guild_id;
+            `).get({
+                channelId: channelId
+            });
+            // deleting the channelConfig record will be handled later (when the bot leaves a server)
+        } else {
+            throw dbNotInitializedError;
+        }
+    }
+
 }
