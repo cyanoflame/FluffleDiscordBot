@@ -11,6 +11,7 @@ import { DevCommand } from "./commands/slashCommands/commands/dev/DevCommand"
 import { SlashCommandRateLimitProxy } from "./proxies/commands/slash/SlashCommandRateLimitProxy"
 import { TestCommand } from "./commands/slashCommands/commands/test/TestCommand"
 import { SlashCommandPermissionProxy } from "./proxies/commands/slash/SlashCommandPermissionProxy"
+import SqliteDb from "./database/sqlite/SqliteDb"
 
 /**
  * This is the function used to define/create the discord bot used by the program.
@@ -19,6 +20,9 @@ import { SlashCommandPermissionProxy } from "./proxies/commands/slash/SlashComma
 export async function defineBot(): Promise<DiscordBot> {
     // TEMPORARY
     let eventDataService = new EventDataService();
+
+    // Initialize databases
+    let db = SqliteDb.initialize(process.env.SQLITE_DB_PATH);
 
     // Event handlers -- there are listeners made for these in the bot
     // let guildJoinHandler = new GuildJoinHandler(eventDataService)
@@ -63,7 +67,7 @@ export async function defineBot(): Promise<DiscordBot> {
             rateLimitInterval: config.rateLimiting.triggers.interval * 1000
         }, 
         "OnImageMessageTrigger", 
-        new OnImageMessageTrigger()
+        new OnImageMessageTrigger(db)
     )); // With RateLimit Proxy
 
     // Create any commands used by the bot

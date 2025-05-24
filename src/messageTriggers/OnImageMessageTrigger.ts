@@ -6,6 +6,7 @@ import { EventData } from "../models/eventData.js"
 import { FormData } from "formdata-node"
 import { FormDataEncoder } from "form-data-encoder"
 import { Readable } from "stream"
+import type { FluffleBotDatabase } from "../database/FluffleBotDatabase.js"
 
 /**
  * This function checks if the content type part of a header is an image.
@@ -121,6 +122,15 @@ function parseResults(fluffleResult: FluffleResult): string {
  * image on Fluffle and responds to the message with any sources found.
  */
 export class OnImageMessageTrigger implements MessageTrigger {
+
+    /** Database used by the trigger for permissions */
+    private readonly db: FluffleBotDatabase;
+    /** Cached settings stored from the DB */
+    private cachedSettings: Map<number, { // guildId -->
+        // These should be hash sets for O(1) lookup
+        whitelistedChannels: Set<number>, // set of channel ids
+        blacklistedChannels: Set<number>, // set of channel ids
+    }>;
     
     /**
      * This event does not need the message guild to run.
@@ -129,16 +139,22 @@ export class OnImageMessageTrigger implements MessageTrigger {
     public isGuildRequired(): boolean {
         return false
     }
-    
 
     /**
      * Creates a new MessageTrigger.
      */
-    constructor() {
-        // doesnt need anything
+    constructor(database: FluffleBotDatabase) {
+        // Save the database accessor
+        this.db = database;
+
+        // create the cache
+        this.cachedSettings = new Map<number, {
+            whitelistedChannels: Set<number>,
+            blacklistedChannels: Set<number>
+        }>();
     }
 
-    private count = 0
+    private count = 0;
 
     /**
      * This will check if a message sent has an image with it to search. If it does, it will
@@ -148,10 +164,57 @@ export class OnImageMessageTrigger implements MessageTrigger {
      */
     public async triggered(msg: Message): Promise<boolean> {
         // console.log(`MESSAGE ${this.count++}:`, msg)
-        console.log(`MESSAGE ${this.count++}:`)
+        console.log(`MESSAGE ${this.count++}:`);
+
+        // Whether or not it is allowed to trigger
+        let allowed: boolean = false;
+
+        // cache needs to be passed in from the bot b/c commands are going to be used to update it
+        // lazily cache new guild settings
+        if(msg.guildId) {
+            let guildId = parseInt(msg.guildId); // This is a SNOWFLAKE. FUCK.
+            let guildConfig = this.cachedSettings.get(guildId);
+            if(guildConfig == null) {
+                let whitelist = new Set<number>();
+                // Cache the channels for the guild
+                this.db.getGuildWhitelist(guildId).forEach(channel => {
+                    whitelist.add(channel.channelId);
+                });
+                let blacklist = new Set<number>();
+                // Cache the channels for the guild
+                this.db.getGuildBlacklist(guildId).forEach(channel => {
+                    blacklist.add(channel.channelId);
+                });
+                // Add to the cache
+                this.cachedSettings.set(guildId, {
+                    whitelistedChannels: whitelist,
+                    blacklistedChannels: blacklist
+                })
+            }
+            // Allowed if:
+            // - there is no channels in the whitelist
+            // - there is a channel with the same id in the whitelist
+            // - the channel is not blacklisted
+
+            // Used to determine whether it's allowed or not to be executed
+            allowed = this.cachedSettings.get(guildId)!.whitelistedChannels.size == 0;
+
+            let channelId = parseInt(msg.channelId);
+
+            // Check whether the channel is whitelisted or not
+            if(!allowed) {
+                allowed = this.cachedSettings.get(guildId)!.whitelistedChannels.has(channelId);
+            }
+            // Check whether or not if it's on the blacklist
+            allowed = allowed && !this.cachedSettings.get(guildId)!.blacklistedChannels.has(channelId);
+        } else {
+            // for any messages NOT in a guild
+            allowed = true;
+        }
 
         // if it's not in the right guild/channel, dont do anything
-        if(msg.guildId == process.env.TEMP_GUILD_ID && msg.channelId == process.env.TEMP_CHANNEL_ID) {
+        // if(msg.guildId == process.env.TEMP_GUILD_ID && msg.channelId == process.env.TEMP_CHANNEL_ID) {
+        if(allowed) {
             // Check all of the attachments for an image
             for(let i = 0; i < msg.attachments.size; i++) {
                 if(isImageContentType(msg.attachments.at(i)!.contentType)) {

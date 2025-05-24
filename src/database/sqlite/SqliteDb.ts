@@ -1,3 +1,4 @@
+import type { FluffleBotDatabase } from "../FluffleBotDatabase";
 import { Database, SQLiteError } from "bun:sqlite"
 
 /** This is used throughout the class for when the  */
@@ -6,7 +7,7 @@ const dbNotInitializedError: ReferenceError = ReferenceError("Database has not b
 /**
  * This class is used for creating, managing, and accessing data from an Sqlite database.
  */
-export default class SqliteDb {
+export default class SqliteDb implements FluffleBotDatabase {
     /** The singleton instance of the class */
     private static instance: SqliteDb | undefined;
 
@@ -45,12 +46,14 @@ export default class SqliteDb {
      * class can be used anywhere.
      * @param path The path to the sqlite db file, or, leave blank or use :memory: to just keep in memory.
      */
-    public initialize(path: string = ":memory:"): void {
+    public static initialize(path: string = ":memory:"): SqliteDb {
         // if there is no DB
         if(SqliteDb.instance == undefined) {
             // create the DB
             SqliteDb.instance = new SqliteDb(path);
         }
+        // Return the singeton instance
+        return SqliteDb.instance;
     }
 
     /**
