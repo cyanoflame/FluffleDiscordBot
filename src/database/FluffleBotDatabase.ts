@@ -12,7 +12,7 @@ export interface FluffleBotDatabase {
      * @param channelId the discord id of the channel being whitelisted.
      * @throws ReferenceError if the DB is not initialized yet.
      */
-    addToGuildWhitelist(guildId: number, channelId: number): void;
+    addToGuildWhitelist(guildId: string, channelId: string): void;
 
     /**
      * This is used to add a whitelisted channel.
@@ -20,7 +20,7 @@ export interface FluffleBotDatabase {
      * @param channelId the discord id of the channel being whitelisted.
      * @throws ReferenceError if the DB is not initialized yet.
      */
-    addToGuildBlacklist(guildId: number, channelId: number): void;
+    addToGuildBlacklist(guildId: string, channelId: string): void;
 
     ///// R /////
 
@@ -29,14 +29,14 @@ export interface FluffleBotDatabase {
      * @param guildId the id of the discord guild to get the whitelisted channels for.
      * @throws ReferenceError if the DB is not initialized yet.
      */
-    getGuildWhitelist(guildId: number): {channelId: number}[];
+    getGuildWhitelist(guildId: string): {channelId: string}[];
 
     /**
      * This is used to get the blacklisted channels for a guild.
      * @param guildId the id of the discord guild to get the blacklisted channels for.
      * @throws ReferenceError if the DB is not initialized yet.
      */
-    getGuildBlacklist(guildId: number): {channelId: number}[];
+    getGuildBlacklist(guildId: string): {channelId: string}[];
 
     ///// U /////
 
@@ -49,13 +49,13 @@ export interface FluffleBotDatabase {
      * @param channelId the discord id of the channel being removed from the whitelist.
      * @throws ReferenceError if the DB is not initialized yet.
      */
-    removeFromGuildWhitelist(channelId: number): void;
+    removeFromGuildWhitelist(channelId: string): void;
 
     /**
      * This is used to remove a blacklisted channel from a guild.
      * @param channelId the discord id of the channel being removed from the blacklist.
      * @throws ReferenceError if the DB is not initialized yet.
      */
-    removeFromGuildBlacklist(channelId: number): void;
+    removeFromGuildBlacklist(channelId: string): void;
 
 }

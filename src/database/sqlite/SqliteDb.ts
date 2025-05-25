@@ -87,7 +87,7 @@ export default class SqliteDb implements FluffleBotDatabase {
         db.run(`
             CREATE TABLE guild_config (
                 id INTEGER NOT NULL PRIMARY KEY,
-                discord_guild_id INTEGER NOT NULL
+                discord_guild_id TEXT NOT NULL
             );
         `);
 
@@ -110,7 +110,7 @@ export default class SqliteDb implements FluffleBotDatabase {
             CREATE TABLE whitelisted_channel (
                 id INTEGER NOT NULL PRIMARY KEY,
                 guild_id INT NOT NULL,
-                discord_channel_id INTEGER NOT NULL UNIQUE,
+                discord_channel_id TEXT NOT NULL UNIQUE,
                 FOREIGN KEY(guild_id) REFERENCES guild_config(id)
             );
         `);
@@ -120,7 +120,7 @@ export default class SqliteDb implements FluffleBotDatabase {
             CREATE TABLE blacklisted_channel (
                 id INTEGER NOT NULL PRIMARY KEY,
                 guild_id INTEGER NOT NULL,
-                discord_channel_id INTEGER NOT NULL UNIQUE,
+                discord_channel_id TEXT NOT NULL UNIQUE,
                 FOREIGN KEY(guild_id) REFERENCES guild_config(id)
             );
         `);
@@ -134,7 +134,7 @@ export default class SqliteDb implements FluffleBotDatabase {
      * @param channelId the discord id of the channel being whitelisted.
      * @throws ReferenceError if the DB is not initialized yet.
      */
-    public addToGuildWhitelist(guildId: number, channelId: number): void {
+    public addToGuildWhitelist(guildId: string, channelId: string): void {
         if(SqliteDb.db) {
             // Insert new guild entry if needed
             SqliteDb.db.query(`
@@ -164,7 +164,7 @@ export default class SqliteDb implements FluffleBotDatabase {
      * @param channelId the discord id of the channel being whitelisted.
      * @throws ReferenceError if the DB is not initialized yet.
      */
-    public addToGuildBlacklist(guildId: number, channelId: number): void {
+    public addToGuildBlacklist(guildId: string, channelId: string): void {
         if(SqliteDb.db) {
             // Insert new guild entry if needed
             SqliteDb.db.query(`
@@ -195,9 +195,9 @@ export default class SqliteDb implements FluffleBotDatabase {
      * @param guildId the id of the discord guild to get the whitelisted channels for.
      * @throws ReferenceError if the DB is not initialized yet.
      */
-    public getGuildWhitelist(guildId: number): {channelId: number}[] {
+    public getGuildWhitelist(guildId: string): {channelId: string}[] {
         if(SqliteDb.db) {
-            return SqliteDb.db.query<{channelId: number}, {guildId: number}>(`
+            return SqliteDb.db.query<{channelId: string}, {guildId: string}>(`
                 SELECT whitelisted_channel.discord_channel_id FROM whitelisted_channel 
                     JOIN guild_config ON whitelisted_channel.guild_id = guild_config.id 
                     WHERE guild_config.discord_guild_id = $guildId;
@@ -215,9 +215,9 @@ export default class SqliteDb implements FluffleBotDatabase {
      * @param guildId the id of the discord guild to get the blacklisted channels for.
      * @throws ReferenceError if the DB is not initialized yet.
      */
-    public getGuildBlacklist(guildId: number): {channelId: number}[] {
+    public getGuildBlacklist(guildId: string): {channelId: string}[] {
         if(SqliteDb.db) {
-            return SqliteDb.db.query<{channelId: number}, {guildId: number}>(`
+            return SqliteDb.db.query<{channelId: string}, {guildId: string}>(`
                 SELECT blacklisted_channel.discord_channel_id FROM blacklisted_channel 
                     JOIN guild_config ON blacklisted_channel.guild_id = guild_config.id 
                     WHERE guild_config.discord_guild_id = $guildId;
@@ -241,10 +241,10 @@ export default class SqliteDb implements FluffleBotDatabase {
      * @param channelId the discord id of the channel being removed from the whitelist.
      * @throws ReferenceError if the DB is not initialized yet.
      */
-    public removeFromGuildWhitelist(channelId: number): void {
+    public removeFromGuildWhitelist(channelId: string): void {
         if(SqliteDb.db) {
             // Delete the row
-            SqliteDb.db.query<{guild_id: number}, {channelId: number}>(`
+            SqliteDb.db.query<{guild_id: number}, {channelId: string}>(`
                 DELETE FROM whitelisted_channel WHERE discord_channel_id = channelId RETURNING guild_id;
             `).get({
                 channelId: channelId
@@ -260,10 +260,10 @@ export default class SqliteDb implements FluffleBotDatabase {
      * @param channelId the discord id of the channel being removed from the blacklist.
      * @throws ReferenceError if the DB is not initialized yet.
      */
-    public removeFromGuildBlacklist(channelId: number): void {
+    public removeFromGuildBlacklist(channelId: string): void {
         if(SqliteDb.db) {
             // Delete the row
-            SqliteDb.db.query<{guild_id: number}, {channelId: number}>(`
+            SqliteDb.db.query<{guild_id: number}, {channelId: string}>(`
                 DELETE FROM blacklisted_channel WHERE discord_channel_id = channelId RETURNING guild_id;
             `).get({
                 channelId: channelId

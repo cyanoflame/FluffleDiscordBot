@@ -126,10 +126,10 @@ export class OnImageMessageTrigger implements MessageTrigger {
     /** Database used by the trigger for permissions */
     private readonly db: FluffleBotDatabase;
     /** Cached settings stored from the DB */
-    private cachedSettings: Map<number, { // guildId -->
+    private cachedSettings: Map<string, { // guildId -->
         // These should be hash sets for O(1) lookup
-        whitelistedChannels: Set<number>, // set of channel ids
-        blacklistedChannels: Set<number>, // set of channel ids
+        whitelistedChannels: Set<string>, // set of channel ids
+        blacklistedChannels: Set<string>, // set of channel ids
     }>;
     
     /**
@@ -148,9 +148,9 @@ export class OnImageMessageTrigger implements MessageTrigger {
         this.db = database;
 
         // create the cache
-        this.cachedSettings = new Map<number, {
-            whitelistedChannels: Set<number>,
-            blacklistedChannels: Set<number>
+        this.cachedSettings = new Map<string, {
+            whitelistedChannels: Set<string>,
+            blacklistedChannels: Set<string>
         }>();
     }
 
@@ -172,15 +172,15 @@ export class OnImageMessageTrigger implements MessageTrigger {
         // cache needs to be passed in from the bot b/c commands are going to be used to update it
         // lazily cache new guild settings
         if(msg.guildId) {
-            let guildId = parseInt(msg.guildId); // This is a SNOWFLAKE. FUCK.
+            let guildId = msg.guildId;
             let guildConfig = this.cachedSettings.get(guildId);
             if(guildConfig == null) {
-                let whitelist = new Set<number>();
+                let whitelist = new Set<string>();
                 // Cache the channels for the guild
                 this.db.getGuildWhitelist(guildId).forEach(channel => {
                     whitelist.add(channel.channelId);
                 });
-                let blacklist = new Set<number>();
+                let blacklist = new Set<string>();
                 // Cache the channels for the guild
                 this.db.getGuildBlacklist(guildId).forEach(channel => {
                     blacklist.add(channel.channelId);
@@ -199,7 +199,7 @@ export class OnImageMessageTrigger implements MessageTrigger {
             // Used to determine whether it's allowed or not to be executed
             allowed = this.cachedSettings.get(guildId)!.whitelistedChannels.size == 0;
 
-            let channelId = parseInt(msg.channelId);
+            let channelId = msg.channelId;
 
             // Check whether the channel is whitelisted or not
             if(!allowed) {
