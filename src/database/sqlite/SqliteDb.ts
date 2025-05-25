@@ -20,24 +20,50 @@ export default class SqliteDb implements FluffleBotDatabase {
      * @param path The path to the sqlite DB file.
      */
     private constructor(path: string) {
-        try {
-            // Try to access the DB first -- if it cannot access it, it will make a new one and setup the schema
-            SqliteDb.db = new Database(path, {
-                create: false,
-                strict: true
-            })
-        } catch(err) {
-            // Should go here if there is no db file
-            if(err instanceof SQLiteError && err.errno == 21) {
-                // Create the new DB
-                SqliteDb.db = new Database(path, {
-                    create: true,
-                    strict: true
-                })
+        // https://github.com/oven-sh/bun/issues/15876
+        // try {
+        //     // Try to access the DB first -- if it cannot access it, it will make a new one and setup the schema
+        //     SqliteDb.db = new Database(path, {
+        //         create: false,
+        //         // strict: true
+        //     })
+        // } catch(err) {
+        //     // Should go here if there is no db file
+        //     if(err instanceof SQLiteError && err.errno == 21) {
+        //         // Create the new DB
+        //         SqliteDb.db = new Database(path, {
+        //             create: true,
+        //             // strict: true
+        //         })
 
-                // Setup the DB schema
-                this.createDatabaseSchema(SqliteDb.db);
-            }
+        //         // Setup the DB schema
+        //         this.createDatabaseSchema(SqliteDb.db);
+        //     }
+        // }
+
+        // Initialize DB asyncronously
+        this.initializeDb(path);
+    }
+
+    /**
+     * This is a method created to initialize the database asynchronously.
+     * The only reason this exists is because there is currently a bug with Bun's Sqlite
+     * implementation that makes {create: false} not work. See: https://github.com/oven-sh/bun/issues/15876
+     * @param path The path to the database
+     */
+    public async initializeDb(path: string): Promise<void> {
+        if(path != ":memory:" && (await Bun.file(path).exists())) {
+            // Try to access the DB first -- if it cannot access it, it will make a new one and setup the schema
+            SqliteDb.db = new Database(path);
+        } else {
+            // Create the new DB
+            SqliteDb.db = new Database(path, {
+                create: true,
+                strict: true
+            });
+
+            // Setup the DB schema
+            this.createDatabaseSchema(SqliteDb.db);
         }
     }
 

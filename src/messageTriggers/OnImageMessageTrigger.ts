@@ -174,7 +174,7 @@ export class OnImageMessageTrigger implements MessageTrigger {
         if(msg.guildId) {
             let guildId = msg.guildId;
             let guildConfig = this.cachedSettings.get(guildId);
-            if(guildConfig == null) {
+            // if(guildConfig == null) {
                 let whitelist = new Set<string>();
                 // Cache the channels for the guild
                 this.db.getGuildWhitelist(guildId).forEach(channel => {
@@ -190,7 +190,7 @@ export class OnImageMessageTrigger implements MessageTrigger {
                     whitelistedChannels: whitelist,
                     blacklistedChannels: blacklist
                 })
-            }
+            // }
             // Allowed if:
             // - there is no channels in the whitelist
             // - there is a channel with the same id in the whitelist

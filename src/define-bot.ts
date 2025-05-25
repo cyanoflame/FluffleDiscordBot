@@ -12,6 +12,7 @@ import { SlashCommandRateLimitProxy } from "./proxies/commands/slash/SlashComman
 import { TestCommand } from "./commands/slashCommands/commands/test/TestCommand"
 import { SlashCommandPermissionProxy } from "./proxies/commands/slash/SlashCommandPermissionProxy"
 import SqliteDb from "./database/sqlite/SqliteDb"
+import { FbConfigCommand } from "./commands/slashCommands/commands/fbconfig/FbConfigCommand"
 
 /**
  * This is the function used to define/create the discord bot used by the program.
@@ -97,6 +98,19 @@ export async function defineBot(): Promise<DiscordBot> {
                 new TestCommand([
                     process.env.DEV_USER_ID ?? "undefined"
                 ])
+            )
+        )
+    );
+
+    bot.addCommand(
+        new SlashCommandRateLimitProxy(
+            {
+                rateLimitAmount: 3,
+                rateLimitInterval: 5
+            },
+            new SlashCommandPermissionProxy(
+                ["Administrator"],
+                new FbConfigCommand()
             )
         )
     );

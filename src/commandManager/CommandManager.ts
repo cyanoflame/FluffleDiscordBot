@@ -119,7 +119,10 @@ export class CommandManager {
      */
     public async getRemoteCommandsOnly(): Promise<APIApplicationCommand[]> {
         // Get all the remote commands
-        return (await this.getRemoteCommands()).filter(
+        let remoteCommands = await this.getRemoteCommands();
+        // Uncomment below to view the remote command data
+        // remoteCommands.forEach(cmd => console.log("Remote Command:", cmd)); 
+        return (remoteCommands).filter(
             // check against all local commands -- remove all commands with a matching local command
             remoteCommand => !this.localCommandsMetadata.some(
                 localCommand => localCommand.name === remoteCommand.name
