@@ -35,3 +35,8 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # test file - used for testing and performance comparison
 test.ts
+
+# database files
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal

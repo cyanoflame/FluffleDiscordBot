@@ -1,5 +1,5 @@
 import type { FluffleBotDatabase } from "../FluffleBotDatabase";
-import { Database, SQLiteError } from "bun:sqlite"
+import { Database, SQLiteError, constants } from "bun:sqlite"
 
 /** This is used throughout the class for when the  */
 const dbNotInitializedError: ReferenceError = ReferenceError("Database has not been initialized"); // TODO: Language support for this
@@ -54,7 +54,9 @@ export default class SqliteDb implements FluffleBotDatabase {
     public async initializeDb(path: string): Promise<void> {
         if(path != ":memory:" && (await Bun.file(path).exists())) {
             // Try to access the DB first -- if it cannot access it, it will make a new one and setup the schema
-            SqliteDb.db = new Database(path);
+            SqliteDb.db = new Database(path, {
+                strict: true
+            });
         } else {
             // Create the new DB
             SqliteDb.db = new Database(path, {
@@ -65,6 +67,9 @@ export default class SqliteDb implements FluffleBotDatabase {
             // Setup the DB schema
             this.createDatabaseSchema(SqliteDb.db);
         }
+
+        // This prevents wal files from lingering after the DB is closed
+        SqliteDb.db.fileControl(constants.SQLITE_FCNTL_PERSIST_WAL, 0);
     }
 
     /**
@@ -224,7 +229,7 @@ export default class SqliteDb implements FluffleBotDatabase {
     public getGuildWhitelist(guildId: string): {channelId: string}[] {
         if(SqliteDb.db) {
             return SqliteDb.db.query<{channelId: string}, {guildId: string}>(`
-                SELECT whitelisted_channel.discord_channel_id FROM whitelisted_channel 
+                SELECT whitelisted_channel.discord_channel_id AS channelId FROM whitelisted_channel 
                     JOIN guild_config ON whitelisted_channel.guild_id = guild_config.id 
                     WHERE guild_config.discord_guild_id = $guildId;
             `)
@@ -244,7 +249,7 @@ export default class SqliteDb implements FluffleBotDatabase {
     public getGuildBlacklist(guildId: string): {channelId: string}[] {
         if(SqliteDb.db) {
             return SqliteDb.db.query<{channelId: string}, {guildId: string}>(`
-                SELECT blacklisted_channel.discord_channel_id FROM blacklisted_channel 
+                SELECT blacklisted_channel.discord_channel_id AS channelId FROM blacklisted_channel 
                     JOIN guild_config ON blacklisted_channel.guild_id = guild_config.id 
                     WHERE guild_config.discord_guild_id = $guildId;
             `)
