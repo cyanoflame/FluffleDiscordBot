@@ -33,10 +33,10 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # Finder (MacOS) folder config
 .DS_Store
 
-# test file - used for testing and performance comparison
-test.ts
-
 # database files
 *.sqlite
 *.sqlite-shm
 *.sqlite-wal
+
+# test file - used for testing and performance comparison
+test.ts
