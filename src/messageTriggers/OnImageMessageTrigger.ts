@@ -169,6 +169,11 @@ export class OnImageMessageTrigger implements MessageTrigger {
         // Whether or not it is allowed to trigger
         let allowed: boolean = false;
 
+        // // IF MESSAGE IS NOT IN GUILD, msg.guildId will be false
+        // console.log("MSG CHANNEL:", msg.channelId)
+
+        // DMs ARE JUST CHANNELS without a guild
+
         // cache needs to be passed in from the bot b/c commands are going to be used to update it
         // lazily cache new guild settings
         if(msg.guildId) {
@@ -191,6 +196,7 @@ export class OnImageMessageTrigger implements MessageTrigger {
                     blacklistedChannels: blacklist
                 })
             }
+
             // Allowed if:
             // - there is no channels in the whitelist
             // - there is a channel with the same id in the whitelist

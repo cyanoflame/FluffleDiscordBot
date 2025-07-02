@@ -126,10 +126,8 @@ export default class SqliteDb implements FluffleBotDatabase {
         // db.run(`
         //     CREATE TABLE channel_config (
         //         id INTEGER NOT NULL PRIMARY KEY,
-        //         guild_id INT NOT NULL,
-        //         discord_channel_id INTEGER NOT NULL UNIQUE,
-        //         whitelisted INT NOT NULL,
-        //         blacklisted INT NOT NULL,
+        //         guild_id INT,
+        //         discord_channel_id TEXT NOT NULL UNIQUE,
         //         -- outputChannelId
         //         -- ...
         //         FOREIGN KEY(guild_id) REFERENCES guild_config(id)
