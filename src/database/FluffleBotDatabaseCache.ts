@@ -1,20 +1,41 @@
 import type { FluffleBotDatabase } from "./FluffleBotDatabase";
 
+// All the allowed platforms
+type AllowedPlatforms = {
+    whitelisted: Set<string>,
+    blacklisted: Set<string>
+}
+
+// All the configurable settings in a guild
+type GuildSettings = {
+    outputChannelId: string | null,
+    nsfw: boolean,
+    platforms: AllowedPlatforms | null,
+    allowed: boolean, // if there are ANY whitelisted channels, than this WILL be false.
+};
+
+// All the configurable settings for a channel
+type ChannelSettings =  GuildSettings & {
+    guildId: string | null,
+    allowed: boolean | null
+}
+
 /**
  * This class is used by the bot as an intermediary for the database, making use of it to 
  * cache commands
  */
-export class FluffleBotDatabaseCache implements FluffleBotDatabase {
+export class FluffleBotDatabaseCache {
 
     /** The instance used to access the database. */
     private readonly db: FluffleBotDatabase;
 
+    // Requires: 
+    // - O(1) check for whitelist/blacklist, and O(1) access to allowed platforms
+    // - Channels without any settings do NOT have an entry in the database
+
     /** Cached settings stored from the DB */
-    private guildSettings: Map<string, { // guildId -->
-        // These should be hash sets for O(1) lookup
-        whitelistedChannels?: Set<string>, // set of channel ids
-        blacklistedChannels?: Set<string>, // set of channel ids
-    }>;
+    private guildSettings: Map<string, GuildSettings>;
+    private channelSettings: Map<string, ChannelSettings >;
 
     /**
      * This creates the object with a database instance used to access the database when it needs
@@ -24,11 +45,58 @@ export class FluffleBotDatabaseCache implements FluffleBotDatabase {
         // Store the database accessor
         this.db = db;
 
-        // create the cache
-        this.guildSettings = new Map<string, {
-            whitelistedChannels: Set<string>,
-            blacklistedChannels: Set<string>
-        }>();
+        // create the maps used for the cache
+        this.guildSettings = new Map<string, GuildSettings>();
+        this.channelSettings = new Map<string, ChannelSettings>();
+    }
+
+    private canUseChannel(channelId: string): boolean {
+        // First check for channel specific settings
+        let channel = this.channelSettings.get(channelId);
+        if(channel) {
+            // If the channel usability depends on the guild, check the guild. Otherwise, it is as it specifies.
+            if(channel.allowed != null) {
+                // Return whether or not the channel is white/black listed
+                return channel.allowed;
+            }
+            // Then check for the guild-specific settings
+            if(channel.guildId) {
+                let guild = this.channelSettings.get(channel.guildId);
+                if(guild) {
+                    // Check the guild to see if there are any whitelisted channels
+                    return guild.allowed;
+                }
+            }
+        }
+        // Nothing stopping it from being used
+        return true;
+    }
+
+    private getSettings(channelId: string, guildId?: string | null): GuildSettings & ChannelSettings | undefined {
+        // First check for channel specific settings
+        let channel = this.channelSettings.get(channelId);
+        let temp: any = {};
+
+        for(const key: keyof ChannelSettings in channel) {
+            temp[key] = channel[key] as any;
+        }
+        if(channel) {
+            // If the channel usability depends on the guild, check the guild. Otherwise, it is as it specifies.
+            if(channel.allowed != null) {
+                // Return whether or not the channel is white/black listed
+                return channel.allowed;
+            }
+            // Then check for the guild-specific settings
+            if(channel.guildId) {
+                let guild = this.channelSettings.get(channel.guildId);
+                if(guild) {
+                    // Check the guild to see if there are any whitelisted channels
+                    return guild.allowed;
+                }
+            }
+        }
+        // Nothing stopping it from being used
+        return undefined;
     }
 
         ///// C /////
