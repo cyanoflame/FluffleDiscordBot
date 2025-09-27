@@ -1,4 +1,4 @@
-import type { FluffleBotDatabase } from "../FluffleBotDatabase";
+import type { FluffleBotDatabase, AllowedPlatform, Platform, GuildConfig, ChannelConfig, AllowList } from "../FluffleBotDatabase";
 import { Database, SQLiteError, constants } from "bun:sqlite"
 
 /** This is used throughout the class for when the  */
@@ -133,61 +133,60 @@ export default class SqliteDb implements FluffleBotDatabase {
             ('inkbunny', 'inkbunny');
         `);
 
-        // create the guild config table
+        // create the config table
         db.run(`
-            CREATE TABLE guild_config (
+            CREATE TABLE config (
                 id INTEGER NOT NULL PRIMARY KEY,
-                discord_guild_id TEXT NOT NULL UNIQUE,
                 output_channel_discord_id TEXT,
                 nsfw BOOLEAN NOT NULL DEFAULT 1
             );
         `);
 
-        // create the channel config table
+        // create the allowed_platform table
         // Whitelisted: allowed == 1
         // Blacklisted: allowed == 0
-        // Neither: allowed == null
+        db.run(`
+            CREATE TABLE allowed_platform (
+                id INTEGER NOT NULL PRIMARY KEY,
+                config_id INTEGER NOT NULL,
+                platform_id INTEGER NOT NULL,
+                allowed BOOLEAN NOT NULL,
+                UNIQUE(config_id, platform_id),
+                FOREIGN KEY(config_id) REFERENCES config(id) ON DELETE CASCADE,
+                FOREIGN KEY(platform_id) REFERENCES platform(id) ON DELETE CASCADE
+            );
+        `);
+
+        // create the guild config table
+        db.run(`
+            CREATE TABLE guild_config (
+                id INTEGER NOT NULL PRIMARY KEY,
+                discord_guild_id TEXT NOT NULL UNIQUE,
+                config_id INTEGER NOT NULL,
+                FOREIGN KEY(config_id) REFERENCES config(id) ON DELETE CASCADE
+            );
+        `);
+
+        // create the channel config table
         db.run(`
             CREATE TABLE channel_config (
                 id INTEGER NOT NULL PRIMARY KEY,
                 discord_channel_id TEXT NOT NULL UNIQUE,
                 guild_id INTEGER,
-                allowed BOOLEAN,
-                output_channel_discord_id TEXT,
-                nsfw BOOLEAN NOT NULL DEFAULT 1.
-                FOREIGN KEY(guild_id) REFERENCES guild_config(id)
+                config_id INTEGER NOT NULL,
+                FOREIGN KEY(guild_id) REFERENCES guild_config(id) ON DELETE CASCADE,
+                FOREIGN KEY(config_id) REFERENCES config(id) ON DELETE CASCADE
             );
         `);
 
-        // create the guild platform table
-        // Whitelisted: allowed == 1
-        // Blacklisted: allowed == 0
-        // Neither: not in table
+        // create the guild channel table
         db.run(`
-            CREATE TABLE guild_platform (
+            CREATE TABLE channel_config (
                 id INTEGER NOT NULL PRIMARY KEY,
                 guild_id INTEGER NOT NULL,
-                platform_id INTEGER NOT NULL,
-                allowed BOOLEAN NOT NULL,
-                UNIQUE(guild_id, platform_id),
-                FOREIGN KEY(guild_id) REFERENCES guild_config(id),
-                FOREIGN KEY(platform_id) REFERENCES platform(id)
-            );
-        `);
-
-        // create the channel platform table
-        // Whitelisted: allowed == 1
-        // Blacklisted: allowed == 0
-        // Neither: not in table
-        db.run(`
-            CREATE TABLE channel_platform (
-                id INTEGER NOT NULL PRIMARY KEY,
                 channel_id INTEGER NOT NULL,
-                platform_id INTEGER NOT NULL,
-                allowed BOOLEAN NOT NULL,
-                UNIQUE(channel_id, platform_id),
-                FOREIGN KEY(channel_id) REFERENCES channel_config(id),
-                FOREIGN KEY(platform_id) REFERENCES platform(id)
+                FOREIGN KEY(guild_id) REFERENCES guild_config(id) ON DELETE CASCADE,
+                FOREIGN KEY(channel_id) REFERENCES channel(id) ON DELETE CASCADE
             );
         `);
 
@@ -195,98 +194,98 @@ export default class SqliteDb implements FluffleBotDatabase {
 
     ///// C /////
 
-    // Create Guild Config
-    public createGuildConfig(guildId: string, outputChannelId?: string | null, allowNsfw?: boolean): void {
-        if(SqliteDb.db) {
-            // Insert new guild entry if needed
-            SqliteDb.db.query(`
-                INSERT OR IGNORE INTO guild_config (discord_guild_id, output_channel_discord_id, nsfw) VALUES ($guild, $outputChannel, $nsfw);
-            `)
-            .run({
-                guild: guildId,
-                outputChannel: outputChannelId ? outputChannelId: null,
-                nsfw: allowNsfw === false ? 0 : 1,
-            })
-        } else {
-            throw dbNotInitializedError;
-        }
-    }
+    // // Create Guild Config
+    // public createGuildConfig(guildId: string, outputChannelId?: string | null, allowNsfw?: boolean): void {
+    //     if(SqliteDb.db) {
+    //         // Insert new guild entry if needed
+    //         SqliteDb.db.query(`
+    //             INSERT OR IGNORE INTO guild_config (discord_guild_id, output_channel_discord_id, nsfw) VALUES ($guild, $outputChannel, $nsfw);
+    //         `)
+    //         .run({
+    //             guild: guildId,
+    //             outputChannel: outputChannelId ? outputChannelId: null,
+    //             nsfw: allowNsfw === false ? 0 : 1,
+    //         })
+    //     } else {
+    //         throw dbNotInitializedError;
+    //     }
+    // }
 
-    // channel_config
-    public createChannelConfig(channelId: string, guildId?: string | null, setAllowed?: boolean | null, outputChannelId?: string | null, allowNsfw?: boolean | null): void {
-        if(SqliteDb.db) {
-            // if the channel is part of a guild, make sure the guild is created first
-            if(guildId) {
-                // Guild channel -- should link to a guild_config entry
-                // Create a guild_config entry
-                // this.createGuildConfig(guildId);
-                // Insert the channel
-                SqliteDb.db.query(`
-                    INSERT OR IGNORE INTO channel_config (discord_channel_id, guild_id, allowed, output_channel_discord_id, nsfw) 
-                        SELECT $channel, guild_config.id, $allowed, $outputChannel, $nsfw FROM guild_config WHERE discord_guild_id = $guild;
-                `)
-                .run({
-                    channel: channelId,
-                    guild: guildId,
-                    allowed: setAllowed === undefined ? null : setAllowed, //default null for allowed
-                    outputChannel: outputChannelId ? outputChannelId : null, // default to no output channel
-                    nsfw: allowNsfw === false ? 0 : 1,
-                });
-            } else {
-                // DMs channel -- no guild reference
-                SqliteDb.db.query(`
-                    INSERT OR IGNORE INTO channel_config (discord_channel_id, allowed, output_channel_discord_id, nsfw) VALUES 
-                        ($channel, $allowed, $outputChannel, $nsfw);
-                `)
-                .run({
-                    channel: channelId,
-                    allowed: setAllowed === undefined ? null : setAllowed, //default null for allowed
-                    outputChannel: outputChannelId ? outputChannelId : null, // default to no output channel
-                    nsfw: allowNsfw === false ? 0 : 1,
-                });
-            }
-        } else {
-            throw dbNotInitializedError;
-        }
-    }
+    // // channel_config
+    // public createChannelConfig(channelId: string, guildId?: string | null, setAllowed?: boolean | null, outputChannelId?: string | null, allowNsfw?: boolean | null): void {
+    //     if(SqliteDb.db) {
+    //         // if the channel is part of a guild, make sure the guild is created first
+    //         if(guildId) {
+    //             // Guild channel -- should link to a guild_config entry
+    //             // Create a guild_config entry
+    //             // this.createGuildConfig(guildId);
+    //             // Insert the channel
+    //             SqliteDb.db.query(`
+    //                 INSERT OR IGNORE INTO channel_config (discord_channel_id, guild_id, allowed, output_channel_discord_id, nsfw) 
+    //                     SELECT $channel, guild_config.id, $allowed, $outputChannel, $nsfw FROM guild_config WHERE discord_guild_id = $guild;
+    //             `)
+    //             .run({
+    //                 channel: channelId,
+    //                 guild: guildId,
+    //                 allowed: setAllowed === undefined ? null : setAllowed, //default null for allowed
+    //                 outputChannel: outputChannelId ? outputChannelId : null, // default to no output channel
+    //                 nsfw: allowNsfw === false ? 0 : 1,
+    //             });
+    //         } else {
+    //             // DMs channel -- no guild reference
+    //             SqliteDb.db.query(`
+    //                 INSERT OR IGNORE INTO channel_config (discord_channel_id, allowed, output_channel_discord_id, nsfw) VALUES 
+    //                     ($channel, $allowed, $outputChannel, $nsfw);
+    //             `)
+    //             .run({
+    //                 channel: channelId,
+    //                 allowed: setAllowed === undefined ? null : setAllowed, //default null for allowed
+    //                 outputChannel: outputChannelId ? outputChannelId : null, // default to no output channel
+    //                 nsfw: allowNsfw === false ? 0 : 1,
+    //             });
+    //         }
+    //     } else {
+    //         throw dbNotInitializedError;
+    //     }
+    // }
 
-    // create guild platform
-    public createGuildPlatform(guildId: string, platformId: string, setAllowed: boolean): void {
-        if(SqliteDb.db) {
-            SqliteDb.db.query(`
-                INSERT OR IGNORE INTO guild_platform (guild_id, platform_id, allowed)  
-                    SELECT guild_info.id, platform.id, $allowed FROM (
-                        SELECT id FROM guild_config WHERE discord_guild_id = $guild
-                    ) AS guild_info JOIN platform ON platform.fluffle_id = $flufflePlatform;
-            `)
-            .run({
-                guild: guildId,
-                flufflePlatform: platformId,
-                allowed: setAllowed,
-            });
-        } else {
-            throw dbNotInitializedError;
-        }
-    }
+    // // create guild platform
+    // public createGuildPlatform(guildId: string, platformId: string, setAllowed: boolean): void {
+    //     if(SqliteDb.db) {
+    //         SqliteDb.db.query(`
+    //             INSERT OR IGNORE INTO guild_platform (guild_id, platform_id, allowed)  
+    //                 SELECT guild_info.id, platform.id, $allowed FROM (
+    //                     SELECT id FROM guild_config WHERE discord_guild_id = $guild
+    //                 ) AS guild_info JOIN platform ON platform.fluffle_id = $flufflePlatform;
+    //         `)
+    //         .run({
+    //             guild: guildId,
+    //             flufflePlatform: platformId,
+    //             allowed: setAllowed,
+    //         });
+    //     } else {
+    //         throw dbNotInitializedError;
+    //     }
+    // }
 
-    // create channel platform
-    public createChannelPlatform(channelId: string, platformId: string, setAllowed: boolean): void {
-        if(SqliteDb.db) {
-            SqliteDb.db.query(`
-                INSERT OR IGNORE INTO channel_platform (channel_id, platform_id, allowed)  
-                    SELECT channel_info.id, platform.id, $allowed FROM (
-                        SELECT id FROM channel_config WHERE discord_channel_id = $channel
-                    ) AS channel_info JOIN platform ON platform.fluffle_id = $flufflePlatform;
-            `)
-            .run({
-                channel: channelId,
-                flufflePlatform: platformId,
-                allowed: setAllowed,
-            });
-        } else {
-            throw dbNotInitializedError;
-        }
-    }
+    // // create channel platform
+    // public createChannelPlatform(channelId: string, platformId: string, setAllowed: boolean): void {
+    //     if(SqliteDb.db) {
+    //         SqliteDb.db.query(`
+    //             INSERT OR IGNORE INTO channel_platform (channel_id, platform_id, allowed)  
+    //                 SELECT channel_info.id, platform.id, $allowed FROM (
+    //                     SELECT id FROM channel_config WHERE discord_channel_id = $channel
+    //                 ) AS channel_info JOIN platform ON platform.fluffle_id = $flufflePlatform;
+    //         `)
+    //         .run({
+    //             channel: channelId,
+    //             flufflePlatform: platformId,
+    //             allowed: setAllowed,
+    //         });
+    //     } else {
+    //         throw dbNotInitializedError;
+    //     }
+    // }
     
     // /**
     //  * This is used to add a whitelisted channel.
@@ -348,90 +347,205 @@ export default class SqliteDb implements FluffleBotDatabase {
     //     }
     // }
 
-    ///// R /////
+///// R /////
 
-    // /**
-    //  * This is used to get the whitelisted channels for a guild.
-    //  * @param guildId the id of the discord guild to get the whitelisted channels for.
-    //  * @throws ReferenceError if the DB is not initialized yet.
-    //  */
-    // public getGuildWhitelist(guildId: string): {channelId: string}[] {
-    //     if(SqliteDb.db) {
-    //         return SqliteDb.db.query<{channelId: string}, {guildId: string}>(`
-    //             SELECT whitelisted_channel.discord_channel_id AS channelId FROM whitelisted_channel 
-    //                 JOIN guild_config ON whitelisted_channel.guild_id = guild_config.id 
-    //                 WHERE guild_config.discord_guild_id = $guildId;
-    //         `)
-    //         .all({
-    //             guildId: guildId
-    //         });
-    //     } else {
-    //         throw dbNotInitializedError;
-    //     }
-    // }
+    /**
+     * Returns all the currently supported platforms.
+     * @return List of all supported platforms for the service.
+     */
+    public async getPlatforms(): Promise<Platform[]> {
+        if(SqliteDb.db) {
+            return SqliteDb.db.query<Platform, {}>(`
+                SELECT platform.fluffle_id, platform.fluffle_name FROM platform;
+            `)
+            .all({});
+        } else {
+            throw dbNotInitializedError;
+        }
+    }
 
-    // /**
-    //  * This is used to get the blacklisted channels for a guild.
-    //  * @param guildId the id of the discord guild to get the blacklisted channels for.
-    //  * @throws ReferenceError if the DB is not initialized yet.
-    //  */
-    // public getGuildBlacklist(guildId: string): {channelId: string}[] {
-    //     if(SqliteDb.db) {
-    //         return SqliteDb.db.query<{channelId: string}, {guildId: string}>(`
-    //             SELECT blacklisted_channel.discord_channel_id AS channelId FROM blacklisted_channel 
-    //                 JOIN guild_config ON blacklisted_channel.guild_id = guild_config.id 
-    //                 WHERE guild_config.discord_guild_id = $guildId;
-    //         `)
-    //         .all({
-    //             guildId: guildId
-    //         });
-    //     } else {
-    //         throw dbNotInitializedError;
-    //     }
-    // }
+    /**
+     * Retrieve the guild configuration info from the database for the guild if able.
+     * @param channelguildId The Discord id of the guild to retrieve.
+     * @return The config data of the guild or undefined if it could not find it.
+     */
+    public async getGuildConfig(guildId: string): Promise<GuildConfig | undefined> {
+        if(SqliteDb.db) {
+            let found = SqliteDb.db.query<GuildConfig, {discordGuildId: string}>(`
+                SELECT guild_config.discord_guild_id AS guildDiscordId, config.output_channel_discord_id AS outputChannelDiscordId, config.nsfw FROM guild_config
+                    JOIN config ON guild_config.config_id = config.id 
+                    WHERE guild_config.discord_guild_id = $discordGuildId;
+            `)
+            .all({
+                discordGuildId: guildId
+            });
+            // Return what was found or undefined if nothing was found
+            if(found.length == 0) {
+                return undefined;
+            } else {
+                return found[0];
+            }
+        } else {
+            throw dbNotInitializedError;
+        }
+    }
 
-    ///// U /////
+    /**
+     * Returns configured list of platform for a guild. Only includes whitelisted and 
+     * blacklisted platforms. All other platforms depend on those.
+     * @param guildId The Discord id of the guild.
+     * @return List of specific platform configurations for a guild.
+     */
+    async getGuildPlatforms(guildId: string): Promise<AllowedPlatform[]> {
+        if(SqliteDb.db) {
+            return SqliteDb.db.query<AllowedPlatform, {guildDiscordId: string}>(`
+                SELECT platform.fluffle_id, platform.fluffle_name, allowed_platform.allowed FROM allowed_platform 
+                JOIN platform ON allowed_platform.platform_id = platform.id
+                JOIN guild_config ON allowed_platform.config_id = guild_config.config_id
+                WHERE guild_config.discord_guild_id = $guildDiscordId;
+            `)
+            .all({
+                guildDiscordId: guildId
+            });
+        } else {
+            throw dbNotInitializedError;
+        }
+    }
+
+    /**
+     * Retrieve the channel configuration info from the database for the channel if able.
+     * @param channelId The Discord id of the channel to retrieve.
+     * @return The config data of the channel or undefined if it could not find it.
+     */
+    public async getChannelConfig(channelId: string): Promise<ChannelConfig | undefined> {
+        if(SqliteDb.db) {
+            let found = SqliteDb.db.query<ChannelConfig, {discordChannelId: string}>(`
+                SELECT channel_config.discord_guild_id AS guildDiscordId, config.output_channel_discord_id AS outputChannelDiscordId, config.nsfw 
+                    guild_config.discord_guild_id AS guildDiscordId
+                    FROM channel_config
+                    JOIN config ON channel_config.config_id = config.id,
+                    LEFT JOIN guild_config ON channel_config.guild_id = guild_config.id
+                    WHERE channel_config.discord_channel_id = $discordChannelId;
+            `)
+            .all({
+                discordChannelId: channelId
+            });
+            // Return what was found or undefined if nothing was found
+            if(found.length == 0) {
+                return undefined;
+            } else {
+                return found[0];
+            }
+        } else {
+            throw dbNotInitializedError;
+        }
+    }
+
+    /**
+     * Returns configured list of platforms for a channel. Only includes whitelisted and 
+     * blacklisted platforms. All other platforms depend on those.
+     * @param channelId The Discord id of the channel.
+     * @return List of specific platform configurations for a channel.
+     */
+    public async getChannelPlatforms(channelId: string): Promise<AllowedPlatform[]> {
+        if(SqliteDb.db) {
+            return SqliteDb.db.query<AllowedPlatform, {channelDiscordId: string}>(`
+                SELECT platform.fluffle_id, platform.fluffle_name, allowed_platform.allowed FROM allowed_platform 
+                JOIN platform ON allowed_platform.platform_id = platform.id
+                JOIN channel_config ON allowed_platform.config_id = guild_config.config_id
+                WHERE channel_config.discord_channel_id = $channelDiscordId;
+            `)
+            .all({
+                channelDiscordId: channelId
+            });
+        } else {
+            throw dbNotInitializedError;
+        }
+    }
+
+    /**
+     * Returns a list of whitelisted and blacklisted channels for a guild. Returns undefined if 
+     * there are no whitelisted or blacklisted channels.
+     * @param guildId The Discord id of the guild.
+     * @return The list of whitelisted Discord ids of channels whitelisted for a server.
+     */
+    public async getGuildChannelAllowList(guildId: string): Promise<AllowList | undefined> {
+        if(SqliteDb.db) {
+            let found = SqliteDb.db.query<{discordChannelId: string, allowed: boolean}, {discordGuildId: string}>(`
+                SELECT channel_config.discord_channel_id AS discordChannelId, guild_channel.allowed FROM guild_channel
+                    JOIN guild_config ON guild_channel.guild_id = guild_config.id,
+                    JOIN channel_config ON guild_channel.channel_id = channel_config.id,
+                    WHERE guild_config.discord_guild_id = $discordGuildId;
+            `)
+            .all({
+                discordGuildId: guildId
+            });
+            // Return what was found or undefined if nothing was found
+            if(found.length == 0) {
+                return undefined;
+            } else {
+                // Otherwise, make the sets to return
+                let out = {
+                    whitelist: new Set<string> (),
+                    blacklist: new Set<string> ()
+                }
+                found.forEach((allowedChannel) => {
+                    if(allowedChannel.allowed) {
+                        out.whitelist.add(allowedChannel.discordChannelId);
+                    } else {
+                        out.blacklist.add(allowedChannel.discordChannelId);
+                    }
+                });
+                // Return the allowlist of channels
+                return out;
+            }
+        } else {
+            throw dbNotInitializedError;
+        }
+    }
+
+///// U /////
 
     // None - since it's either there or not for the current whitelist/blacklist setup //
 
-    ///// D /////
+///// D /////
 
-    /**
-     * This is used to remove a whitelisted channel from a guild.
-     * @param channelId the discord id of the channel being removed from the whitelist.
-     * @throws ReferenceError if the DB is not initialized yet.
-     */
-    public removeFromGuildWhitelist(channelId: string): void {
-        if(SqliteDb.db) {
-            // Delete the row
-            SqliteDb.db.query<{guild_id: number}, {channelId: string}>(`
-                DELETE FROM whitelisted_channel WHERE discord_channel_id = channelId RETURNING guild_id;
-            `).get({
-                channelId: channelId
-            });
-            // deleting the channelConfig record will be handled later (when the bot leaves a server)
-        } else {
-            throw dbNotInitializedError;
-        }
-    }
+    // /**
+    //  * This is used to remove a whitelisted channel from a guild.
+    //  * @param channelId the discord id of the channel being removed from the whitelist.
+    //  * @throws ReferenceError if the DB is not initialized yet.
+    //  */
+    // public removeFromGuildWhitelist(channelId: string): void {
+    //     if(SqliteDb.db) {
+    //         // Delete the row
+    //         SqliteDb.db.query<{guild_id: number}, {channelId: string}>(`
+    //             DELETE FROM whitelisted_channel WHERE discord_channel_id = channelId RETURNING guild_id;
+    //         `).get({
+    //             channelId: channelId
+    //         });
+    //         // deleting the channelConfig record will be handled later (when the bot leaves a server)
+    //     } else {
+    //         throw dbNotInitializedError;
+    //     }
+    // }
 
-    /**
-     * This is used to remove a blacklisted channel from a guild.
-     * @param channelId the discord id of the channel being removed from the blacklist.
-     * @throws ReferenceError if the DB is not initialized yet.
-     */
-    public removeFromGuildBlacklist(channelId: string): void {
-        if(SqliteDb.db) {
-            // Delete the row
-            SqliteDb.db.query<{guild_id: number}, {channelId: string}>(`
-                DELETE FROM blacklisted_channel WHERE discord_channel_id = channelId RETURNING guild_id;
-            `).get({
-                channelId: channelId
-            });
-            // deleting the channelConfig record will be handled later (when the bot leaves a server)
-        } else {
-            throw dbNotInitializedError;
-        }
-    }
+    // /**
+    //  * This is used to remove a blacklisted channel from a guild.
+    //  * @param channelId the discord id of the channel being removed from the blacklist.
+    //  * @throws ReferenceError if the DB is not initialized yet.
+    //  */
+    // public removeFromGuildBlacklist(channelId: string): void {
+    //     if(SqliteDb.db) {
+    //         // Delete the row
+    //         SqliteDb.db.query<{guild_id: number}, {channelId: string}>(`
+    //             DELETE FROM blacklisted_channel WHERE discord_channel_id = channelId RETURNING guild_id;
+    //         `).get({
+    //             channelId: channelId
+    //         });
+    //         // deleting the channelConfig record will be handled later (when the bot leaves a server)
+    //     } else {
+    //         throw dbNotInitializedError;
+    //     }
+    // }
 
 }
