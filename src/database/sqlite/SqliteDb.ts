@@ -181,10 +181,11 @@ export default class SqliteDb implements FluffleBotDatabase {
 
         // create the guild channel table
         db.run(`
-            CREATE TABLE channel_config (
+            CREATE TABLE guild_channel (
                 id INTEGER NOT NULL PRIMARY KEY,
                 guild_id INTEGER NOT NULL,
                 channel_id INTEGER NOT NULL,
+                allowed BOOLEAN NOT NULL,
                 FOREIGN KEY(guild_id) REFERENCES guild_config(id) ON DELETE CASCADE,
                 FOREIGN KEY(channel_id) REFERENCES channel(id) ON DELETE CASCADE
             );
