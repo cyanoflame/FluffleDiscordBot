@@ -37,7 +37,7 @@ export type ChannelConfig = Config & {
     channelDiscordId: string
 };
 
-/** The whitelist and blacklist for a guild. */
+/** The channel whitelist and blacklist for a guild. */
 export type AllowList = {
     /** What channels are allowed for the guild. */
     whitelist: Set<string>,
@@ -52,7 +52,6 @@ export type AllowList = {
 export interface FluffleBotDatabase {
 
     ///// C /////
-
 
     // createGuildConfig(config: GuildConfig): Promise<void>;
 

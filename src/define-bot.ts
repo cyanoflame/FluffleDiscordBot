@@ -22,7 +22,7 @@ export async function defineBot(): Promise<DiscordBot> {
     // TEMPORARY
     let eventDataService = new EventDataService();
 
-    // Initialize databases
+    // Initialize database
     let db = SqliteDb.initialize(process.env.SQLITE_DB_PATH);
 
     // Event handlers -- there are listeners made for these in the bot
@@ -54,6 +54,7 @@ export async function defineBot(): Promise<DiscordBot> {
         // buttonHandler,
         // reactionHandler,
         // new JobService(jobs)
+        db,
 
         eventDataService // TEMPORARY
     )
@@ -68,7 +69,7 @@ export async function defineBot(): Promise<DiscordBot> {
             rateLimitInterval: config.rateLimiting.triggers.interval * 1000
         }, 
         "OnImageMessageTrigger", 
-        new OnImageMessageTrigger(db)
+        new OnImageMessageTrigger()
     )); // With RateLimit Proxy
 
     // Create any commands used by the bot

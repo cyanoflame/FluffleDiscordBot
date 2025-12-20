@@ -17,7 +17,7 @@ export type FullChannelConfig = ChannelConfig & {
 
 /**
  * This class is used by the bot as an intermediary for the database, making use of it to 
- * cache commands
+ * cache data and provide an interface for responses.
  */
 export class FluffleBotDatabaseCache {
 
@@ -74,8 +74,7 @@ export class FluffleBotDatabaseCache {
 
     /**
      * Private helper method used to create a list of platform strings (of fluffle_ids) allowed to be 
-     * used from a list of allowedPlatforms. If there are any whitelisted, it will return the whitelisted 
-     * channels. If there are any blacklisted, it will not return those.
+     * used from a list of allowedPlatforms.
      * @param allowedPlatforms The list of allowed platforms to check.
      * @return List of fluffle ids for all the allowed platforms found.
      */
@@ -227,6 +226,7 @@ export class FluffleBotDatabaseCache {
     /**
      * Private helper method used to get the channel from the cache, and if it's not in the cache,
      * retrieve it from the databse. If it's not in the databse, it will return undefined.
+     * @param guildId The Discord id of the guild the channel is in, or null if it is not a part of one.
      * @param channelId The Discord id of the channel to retrieve.
      * @return The data for the channel or undefined if not found. 
      */
@@ -273,6 +273,57 @@ export class FluffleBotDatabaseCache {
         
         // Return retrieved channel data
         return channel;
+    }
+
+    /**
+     * Checks whether or not a channel is usable.
+     * @param guildId The Discord id of the guild the channel is in, or null if it is not a part of one.
+     * @param channelId The Discord id of the channel being checked.
+     * @return Whether or not a channel can be used.
+     */
+    public async canUseChannel(guildId: string | null, channelId: string): Promise<boolean>  {
+        // A channel can be used if:
+        // - it is not part of a guild
+        // - there are no channels guild's whitelist
+        // - the channel is not listed in the blacklist
+
+        // if no guild is associated with the channel, then allow it
+        if(guildId == null) {
+            return true;
+        }
+
+        // Get the guild data
+        let guildData = await this.getGuild(guildId);
+
+        // No whitelist or blacklist --> channel is allowed
+        if(guildData.allowList == undefined) {
+            return true;
+        }
+
+        // Check the whitelist for the channel if anything is whitelisted
+        if(guildData.allowList.whitelist.size > 0) {
+            return guildData.allowList.whitelist.has(channelId);
+        }
+
+        // Check the blacklist for the channel
+        if(guildData.allowList.blacklist.size > 0) {
+            return !guildData.allowList.blacklist.has(channelId);
+        }
+
+        // Otherwise, channel is allowed
+        return true;
+    }
+
+    /**
+     * Returns all of the platforms for a channel, or null if it's using all of them 
+     * @param guildId 
+     * @param channelId 
+     * @returns 
+     */
+    public async getChannelPlatforms(guildId: string | null, channelId: string): Promise<string[] | null> {
+        let foundPlatforms = (await this.getChannel(guildId, channelId)).platforms;
+        if(foundPlatforms)
+        // return (await this.getChannel(guildId, channelId)).platforms;
     }
 
     // /**

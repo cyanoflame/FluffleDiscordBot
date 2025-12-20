@@ -6,7 +6,7 @@ import { EventData } from "../models/eventData.js"
 import { FormData } from "formdata-node"
 import { FormDataEncoder } from "form-data-encoder"
 import { Readable } from "stream"
-import type { FluffleBotDatabase } from "../database/FluffleBotDatabase.js"
+import type { FluffleBotDatabaseCache } from "../database/FluffleBotDatabaseCache.js"
 
 /**
  * This function checks if the content type part of a header is an image.
@@ -122,16 +122,6 @@ function parseResults(fluffleResult: FluffleResult): string {
  * image on Fluffle and responds to the message with any sources found.
  */
 export class OnImageMessageTrigger implements MessageTrigger {
-
-    /** Database used by the trigger for permissions */
-    private readonly db: FluffleBotDatabase;
-    /** Cached settings stored from the DB */
-    private cachedSettings: Map<string, { // guildId -->
-        // These should be hash sets for O(1) lookup
-        whitelistedChannels: Set<string>, // set of channel ids
-        blacklistedChannels: Set<string>, // set of channel ids
-    }>;
-    
     /**
      * This event does not need the message guild to run.
      * @returns false
@@ -143,16 +133,7 @@ export class OnImageMessageTrigger implements MessageTrigger {
     /**
      * Creates a new MessageTrigger.
      */
-    constructor(database: FluffleBotDatabase) {
-        // Save the database accessor
-        this.db = database;
-
-        // create the cache
-        this.cachedSettings = new Map<string, {
-            whitelistedChannels: Set<string>,
-            blacklistedChannels: Set<string>
-        }>();
-    }
+    constructor() {}
 
     private count = 0;
 
@@ -162,69 +143,17 @@ export class OnImageMessageTrigger implements MessageTrigger {
      * @param msg The message being checked for an image.
      * @returns Whether or not there is an image attached to the message to reverse image search.
      */
-    public async triggered(msg: Message): Promise<boolean> {
+    public async triggered(msg: Message, db: FluffleBotDatabaseCache): Promise<boolean> {
         // console.log(`MESSAGE ${this.count++}:`, msg)
         console.log(`MESSAGE ${this.count++}:`);
 
-        // Whether or not it is allowed to trigger
-        let allowed: boolean = false;
-
-        // // IF MESSAGE IS NOT IN GUILD, msg.guildId will be false
-        // console.log("MSG CHANNEL:", msg.channelId)
-
-        // DMs ARE JUST CHANNELS without a guild
-
-        // cache needs to be passed in from the bot b/c commands are going to be used to update it
-        // lazily cache new guild settings
-        if(msg.guildId) {
-            let guildId = msg.guildId;
-            let guildConfig = this.cachedSettings.get(guildId);
-            if(guildConfig == null) {
-                let whitelist = new Set<string>();
-                // Cache the channels for the guild
-                this.db.getGuildWhitelist(guildId).forEach(channel => {
-                    whitelist.add(channel.channelId);
-                });
-                let blacklist = new Set<string>();
-                // Cache the channels for the guild
-                this.db.getGuildBlacklist(guildId).forEach(channel => {
-                    blacklist.add(channel.channelId);
-                });
-                // Add to the cache
-                this.cachedSettings.set(guildId, {
-                    whitelistedChannels: whitelist,
-                    blacklistedChannels: blacklist
-                })
-            }
-
-            // Allowed if:
-            // - there is no channels in the whitelist
-            // - there is a channel with the same id in the whitelist
-            // - the channel is not blacklisted
-
-            // Used to determine whether it's allowed or not to be executed
-            allowed = this.cachedSettings.get(guildId)!.whitelistedChannels.size == 0;
-
-            let channelId = msg.channelId;
-
-            // Check whether the channel is whitelisted or not
-            if(!allowed) {
-                allowed = this.cachedSettings.get(guildId)!.whitelistedChannels.has(channelId);
-            }
-            // Check whether or not if it's on the blacklist
-            allowed = allowed && !this.cachedSettings.get(guildId)!.blacklistedChannels.has(channelId);
-        } else {
-            // for any messages NOT in a guild
-            allowed = true;
-        }
-
         // if it's not in the right guild/channel, dont do anything
         // if(msg.guildId == process.env.TEMP_GUILD_ID && msg.channelId == process.env.TEMP_CHANNEL_ID) {
-        if(allowed) {
+        if(await db.canUseChannel(msg.guildId, msg.channelId)) {
             // Check all of the attachments for an image
             for(let i = 0; i < msg.attachments.size; i++) {
                 if(isImageContentType(msg.attachments.at(i)!.contentType)) {
-                    return true
+                    return true;
                 }
             }
 
@@ -236,7 +165,7 @@ export class OnImageMessageTrigger implements MessageTrigger {
                 // Get the latest snowflake
                 for(const snowflakeObj of msg.messageSnapshots.keys()) {
                     if(largestSnapshotSnowflake == undefined || largestSnapshotSnowflake.localeCompare(snowflakeObj) < 0) {
-                        largestSnapshotSnowflake = snowflakeObj
+                        largestSnapshotSnowflake = snowflakeObj;
                     }
                 }
 
@@ -245,13 +174,13 @@ export class OnImageMessageTrigger implements MessageTrigger {
                 // Check the latest snapshot for having an image attachment
                 for(const attachment of msg.messageSnapshots.get(largestSnapshotSnowflake!)!.attachments.values()) {
                     if(isImageContentType(attachment.contentType)) {
-                        return true
+                        return true;
                     }
                 }
             }
         }
 
-        return false
+        return false;
     }
 
     /**
@@ -259,8 +188,9 @@ export class OnImageMessageTrigger implements MessageTrigger {
      * @param client The Discord client to run any commands to interact with Discord.
      * @param msg The message casuing the trigger.
      * @param data The data related to the event, passed in from the EventDataService.
+     * @param db The database to access/update anything with the event.
      */
-    public async execute(client: Client, msg: Message, data: EventData): Promise<void> {
+    public async execute(client: Client, msg: Message, data: EventData, db: FluffleBotDatabaseCache): Promise<void> {
         // Check the referenced post if it's a forwarded message
 
         // get the message channel to send the response to
@@ -366,10 +296,9 @@ export class OnImageMessageTrigger implements MessageTrigger {
 
             // Fetch download method - runs faster with larger files???
 
-            let imageData = await fetch(imageAttachments[i].url).then(res => res.arrayBuffer())
+            // Get the channel data
 
-            // Reduce the image size to 1 side being a min res
-            const MIN_IMAGE_RES = 256
+            let imageData = await fetch(imageAttachments[i].url).then(res => res.arrayBuffer())
 
             let imgWidth = imageAttachments[i].width!
             let imgHeight = imageAttachments[i].height!
@@ -387,7 +316,8 @@ export class OnImageMessageTrigger implements MessageTrigger {
             let newImgData = new Blob([await sharp(imageData)
             .resize(imgWidth, imgHeight)
             .png()
-            .toBuffer()])
+            .toBuffer() as unknown as ArrayBuffer]); 
+            // ^^ This did work before Bun 1.1.19, cast happened after. 
 
             // Whatever happens to the gif, it is not resized. It just turns into a PNG?
 

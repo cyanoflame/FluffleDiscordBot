@@ -44,6 +44,8 @@ import CommonLanguageElements from "../../lang/common.json"
 import { CommandStore } from "./CommandStore"
 import { DiscordLimits } from "../constants/DiscordLimits"
 import { CommandDeferType } from "../commands/CommandDeferType"
+import { FluffleBotDatabaseCache } from "../database/FluffleBotDatabaseCache"
+import type { FluffleBotDatabase } from "../database/FluffleBotDatabase"
 
 /**
  * This class is used for the
@@ -64,6 +66,9 @@ class DiscordBot {
     /** This is where the commands used by the bot are stored */
     private commands: CommandStore;
 
+    /** This is where all the data for configuration is stored. */
+    private database: FluffleBotDatabaseCache;
+
     /** This is a placeholder while I figure out a better way of implementing it. */
     private eventDataService: EventDataService;
 
@@ -83,10 +88,13 @@ class DiscordBot {
      * This contstructs the discord bot object.
      * @param options The options unique to the discord bot Client being used.
      * @param token The discord bot token.
+     * @param database This is the database used by the bot for storing/accessing 
+     * configurations. Caching is handled internally.
      */
     constructor( 
         options: ClientOptions,
         token: string, 
+        database: FluffleBotDatabase,
         eventDataService: EventDataService // WILL BE REMOVED
     ) {
         // Bot is not ready upon creation
@@ -103,6 +111,9 @@ class DiscordBot {
 
         // Create the command storage
         this.commands = new CommandStore();
+
+        // Store the database cache
+        this.database = new FluffleBotDatabaseCache(database);
 
         // TEMPORARY
         this.eventDataService = eventDataService
@@ -242,7 +253,7 @@ class DiscordBot {
         // Do not do anything if the bot is not ready, and do not respond 
         // to anything from the bot itself or the system
         if(!this.ready || msg.system || msg.author.id === msg.client.user?.id) {
-            return
+            return;
         }
         try {
             // Attempt to get the message if a partial for it is being checked
@@ -259,14 +270,14 @@ class DiscordBot {
                     continue;
                 }
                 // check which message triggers are active
-                if(await messageTrigger.triggered(msg)) {
+                if(await messageTrigger.triggered(msg, this.database)) {
                     activeMessageTriggers.push(messageTrigger);
                 }
             }
 
             // If this message causes no triggers then return
             if (activeMessageTriggers.length === 0) {
-                return
+                return;
             }
 
             // Get data from database --> moved to the event object themselves
@@ -274,11 +285,11 @@ class DiscordBot {
                 user: msg.author,
                 channel: msg.channel,
                 guild: msg.guild ?? undefined,
-            })
+            });
 
             // Execute triggers
             for (let messageTrigger of activeMessageTriggers) {
-                await messageTrigger.execute(this.client, msg, data);
+                await messageTrigger.execute(this.client, msg, data, this.database);
             }
         } catch (error) {
             Logger.error(LogMessageTemplates.error.message, error)

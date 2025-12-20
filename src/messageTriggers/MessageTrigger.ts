@@ -1,7 +1,6 @@
 import { Client, Message } from 'discord.js'
-
-
 import { EventData } from '../models/eventData.ts'
+import type { FluffleBotDatabaseCache } from '../database/FluffleBotDatabaseCache.ts';
 
 /**
  * A Trigger is executed whenever conditions with a specific message are met. The conditions to check for are 
@@ -18,14 +17,16 @@ export interface MessageTrigger {
     /**
      * This is the method used to check the conditions for whether or not the trigger will be executed.
      * @param msg The message causing the trigger.
+     * @param db The database from the bot to access/check for anything
      */
-    triggered(msg: Message): Promise<boolean>;
+    triggered(msg: Message, db: FluffleBotDatabaseCache): Promise<boolean>;
     
     /**
      * When the trigger conditions are met, this function will be executed.
      * @param client The Discord client to run any commands to interact with Discord.
      * @param msg The message casuing the trigger.
      * @param data The data related to the event, passed in from the EventDataService.
+     * @param db The database to access/update anything with the event. TODO: Make this an interface to abstract only what's needed.
      */
-    execute(client: Client, msg: Message, data: EventData): Promise<void>;
+    execute(client: Client, msg: Message, data: EventData, db: FluffleBotDatabaseCache): Promise<void>;
 }
