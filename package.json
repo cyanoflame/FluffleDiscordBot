@@ -28,12 +28,12 @@
     "typescript": "^5.8.2"
   },
   "dependencies": {
-    "discord.js": "^14.19.1",
+    "discord.js": "^14.25.1",
     "form-data-encoder": "^4.0.2",
     "formdata-node": "^6.0.3",
     "pino": "^9.6.0",
     "pino-pretty": "^13.0.0",
     "rate-limiter-flexible": "^7.0.0",
-    "sharp": "^0.33.5"
+    "sharp": "^0.35.4"
   }
 }
